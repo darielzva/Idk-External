@@ -1,0 +1,86 @@
+name: Build DARIELMODZ IPA
+
+on:
+  push:
+    branches: [ main, 3105-main ]
+    paths:
+      - 'ThreeOneOSFive/**'
+      - 'ThreeOneOSFive.xcodeproj/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode 16.1
+      run: |
+        sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+        xcodebuild -version
+
+    # ⚡ Cache del runtime (solo se descarga la primera vez)
+    - name: Cache iOS Simulator Runtime
+      uses: actions/cache@v4
+      with:
+        path: ~/Library/Developer/CoreSimulator/Profiles/Runtimes
+        key: ios-runtime-18.1-v1
+
+    - name: Install iOS Simulator Runtime (if not cached)
+      run: |
+        if [ ! -d ~/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS.simruntime ]; then
+          echo "Runtime not cached, downloading..."
+          xcodebuild -downloadPlatform iOS -buildVersion 18.1 || \
+          xcodebuild -downloadPlatform iOS || true
+        else
+          echo "Runtime already cached, skipping download"
+        fi
+        xcrun simctl list runtimes
+
+    # ⚡ Compilación con optimizaciones
+    - name: Build and archive
+      run: |
+        xcodebuild archive \
+          -project ThreeOneOSFive.xcodeproj \
+          -scheme 3105 \
+          -configuration Release \
+          -sdk iphoneos \
+          -destination 'generic/platform=iOS' \
+          -archivePath build/3105.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          ONLY_ACTIVE_ARCH=NO \
+          COMPILER_INDEX_STORE_ENABLE=NO \
+          -skipPackagePluginValidation \
+          -skipMacroValidation \
+          -quiet
+
+    - name: Verify archive
+      run: |
+        ls -la build/3105.xcarchive/Products/Applications/
+        echo "==== Patches ===="
+        ls -la "build/3105.xcarchive/Products/Applications/3105.app/Patches/" || echo "Patches NOT FOUND"
+
+    - name: Package unsigned IPA
+      run: |
+        mkdir -p build/Payload
+        cp -R build/3105.xcarchive/Products/Applications/3105.app build/Payload/
+        cd build
+        zip -r DARIELMODZ-unsigned.ipa Payload
+
+    - name: Zip the IPA
+      run: |
+        cd build
+        zip -r DARIELMODZ-build.zip DARIELMODZ-unsigned.ipa
+
+    - name: Upload ZIP artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DARIELMODZ-IPA
+        path: build/DARIELMODZ-build.zip
+        retention-days: 30
