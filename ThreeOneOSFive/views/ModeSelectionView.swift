@@ -6,11 +6,12 @@ struct ModeSelectionView: View {
     @State private var appeared = false
     @State private var showAdvancedSettings = false
     
-    private let title = "PERFILES DARIELMODZ"
+    // MARK: - TÍTULO
+    private let title = "IDK"
     private let subtitle = "Selecciona tu versión del juego"
     private let madeBy = "Hecho por didierxitx7"
     
-    // MARK: - Key Helpers
+    // MARK: - Key Helpers (SIN CAMBIOS)
     
     private var keyDisplayName: String {
         supabase.currentKey?.keyValue ?? "SIN KEY"
@@ -31,7 +32,6 @@ struct ModeSelectionView: View {
         let now = Date()
         let diff = date.timeIntervalSince(now)
         
-        // Si ya expiró
         if diff <= 0 {
             return "Expirada"
         }
@@ -41,25 +41,19 @@ struct ModeSelectionView: View {
         let days = totalHours / 24
         let minutes = totalMinutes % 60
         
-        // Más de 1 día
         if days > 1 {
             return "\(days) días"
         }
-        // Exactamente 1 día
         if days == 1 {
             return "1 día"
         }
-        // Menos de 1 día pero más de 1 hora
         if totalHours >= 1 {
             return "\(totalHours)h \(minutes)m"
         }
-        // Menos de 1 hora
         return "\(minutes)m"
     }
     
-    /// Parser robusto para fechas de Supabase
     private func parseSupabaseDate(_ string: String) -> Date? {
-        // Intento 1: ISO8601 con formato estándar
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = iso.date(from: string) { return date }
@@ -67,18 +61,15 @@ struct ModeSelectionView: View {
         iso.formatOptions = [.withInternetDateTime]
         if let date = iso.date(from: string) { return date }
         
-        // Intento 2: formato de Supabase (2026-10-05 05:43:32.053+0)
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSZ"
         df.locale = Locale(identifier: "en_US_POSIX")
         df.timeZone = TimeZone(secondsFromGMT: 0)
         if let date = df.date(from: string) { return date }
         
-        // Intento 3: formato sin milisegundos
         df.dateFormat = "yyyy-MM-dd HH:mm:ssZ"
         if let date = df.date(from: string) { return date }
         
-        // Intento 4: reemplazar espacio por T
         let fixed = string.replacingOccurrences(of: " ", with: "T")
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = iso.date(from: fixed) { return date }
@@ -87,24 +78,24 @@ struct ModeSelectionView: View {
     }
     
     private var keyStatusColor: Color {
-        guard let key = supabase.currentKey else { return .white.opacity(0.5) }
+        guard let key = supabase.currentKey else { return .white.opacity(0.6) }
         
         if key.isBanned {
-            return Color(red: 0.9, green: 0.3, blue: 0.3)
+            return Color(red: 0.8, green: 0.3, blue: 0.3) // Rojo suave
         }
         
         if let expiresAt = key.expiresAt,
            let date = parseSupabaseDate(expiresAt) {
             let days = Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0
             if days < 0 {
-                return Color(red: 0.9, green: 0.3, blue: 0.3)
+                return Color(red: 0.8, green: 0.3, blue: 0.3)
             }
             if days <= 3 {
-                return Color(red: 1.0, green: 0.6, blue: 0.2)
+                return Color(red: 0.85, green: 0.65, blue: 0.3) // Beige/Naranja suave
             }
         }
         
-        return .white
+        return Color(red: 0.95, green: 0.93, blue: 0.88) // Blanco perla
     }
     
     // MARK: - Body
@@ -168,27 +159,40 @@ struct ModeSelectionView: View {
         }
     }
     
-    // MARK: - Background
+    // MARK: - Background (MODIFICADO: Fondo Blanco Perla/Beige muy claro)
     
     private var background: some View {
         ZStack {
-            Color.black
+            // Fondo base: Blanco hueso / Perla claro
+            Color(red: 0.93, green: 0.91, blue: 0.88)
                 .ignoresSafeArea()
             
+            // Gradiente radial: Brillo blanco puro en la parte superior
             RadialGradient(
                 colors: [
-                    Color.white.opacity(0.1),
+                    Color.white.opacity(0.9),
                     Color.clear
                 ],
                 center: .init(x: 0.5, y: 0.1),
                 startRadius: 0,
-                endRadius: 350
+                endRadius: 500
+            )
+            .ignoresSafeArea()
+            
+            // Gradiente sutil beige en la parte inferior
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Color(red: 0.85, green: 0.82, blue: 0.78).opacity(0.4)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
             )
             .ignoresSafeArea()
         }
     }
     
-    // MARK: - Logo Header
+    // MARK: - Logo Header (MODIFICADO: Acentos Blancos/Perla)
     
     private var logoHeader: some View {
         ZStack {
@@ -196,7 +200,7 @@ struct ModeSelectionView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.white.opacity(0.2),
+                            Color.white.opacity(0.8),
                             Color.clear
                         ],
                         center: .center,
@@ -207,39 +211,46 @@ struct ModeSelectionView: View {
                 .frame(width: 140, height: 140)
             
             Circle()
-                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                .stroke(Color.white.opacity(0.6), lineWidth: 1)
                 .frame(width: 110, height: 110)
             
             Circle()
                 .stroke(
                     LinearGradient(
-                        colors: [.white, Color.white.opacity(0.5)],
+                        colors: [
+                            Color.white,
+                            Color(red: 0.9, green: 0.85, blue: 0.8) // Beige claro
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
                     lineWidth: 2.5
                 )
                 .frame(width: 90, height: 90)
-                .shadow(color: .white.opacity(0.5), radius: 15)
+                .shadow(color: Color.white.opacity(0.8), radius: 15)
             
             Image("Logo")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 68, height: 68)
                 .clipShape(Circle())
+                .shadow(color: .black.opacity(0.1), radius: 5) // Sombra sutil para que resalte
         }
     }
     
-    // MARK: - Title
+    // MARK: - Title (MODIFICADO: Color Blanco/Gris Oscuro para contraste)
     
     private var titleSection: some View {
         VStack(spacing: 6) {
             Text(title)
-                .font(.system(size: 24, weight: .heavy, design: .rounded))
-                .tracking(1.5)
+                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                .tracking(2.5)
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.white, Color.white.opacity(0.7)],
+                        colors: [
+                            Color(red: 0.2, green: 0.2, blue: 0.2), // Gris oscuro casi negro
+                            Color(red: 0.4, green: 0.4, blue: 0.4)   // Gris medio
+                        ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -247,11 +258,11 @@ struct ModeSelectionView: View {
             
             Text(subtitle)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color(red: 0.4, green: 0.4, blue: 0.4).opacity(0.8))
         }
     }
     
-    // MARK: - Mode Card
+    // MARK: - Mode Card (MODIFICADO: Estilo Blanco Translúcido)
     
     @ViewBuilder
     private func modeCard(
@@ -271,30 +282,31 @@ struct ModeSelectionView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.8))
                         .tracking(0.5)
                     
                     Text(subtitle)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(.black.opacity(0.5))
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.black.opacity(0.4))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.04))
+                    .fill(Color.white.opacity(0.7)) // Fondo blanco translúcido
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.9), lineWidth: 1)
                     )
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4) // Sombra suave
             )
         }
         .buttonStyle(ScaleButtonStyle())
@@ -310,8 +322,8 @@ struct ModeSelectionView: View {
                 .fill(
                     LinearGradient(
                         colors: mode == .normal
-                            ? [Color.orange.opacity(0.3), Color.red.opacity(0.15)]
-                            : [Color.blue.opacity(0.3), Color.cyan.opacity(0.15)],
+                            ? [Color(red: 1.0, green: 0.8, blue: 0.5).opacity(0.4), Color(red: 1.0, green: 0.6, blue: 0.3).opacity(0.2)] // Naranja/Beige
+                            : [Color.white.opacity(0.6), Color(red: 0.9, green: 0.85, blue: 0.8).opacity(0.3)], // Perla/Beige
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -327,16 +339,20 @@ struct ModeSelectionView: View {
             } else {
                 Image(systemName: mode == .normal ? "flame.fill" : "bolt.fill")
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(mode == .normal ? Color.orange : Color.blue)
+                    .foregroundStyle(
+                        mode == .normal
+                            ? Color(red: 0.9, green: 0.5, blue: 0.2) // Naranja suave
+                            : Color(red: 0.4, green: 0.4, blue: 0.4) // Gris oscuro
+                    )
             }
         }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                .stroke(Color.white.opacity(0.8), lineWidth: 1)
         )
     }
     
-    // MARK: - Profile Card
+    // MARK: - Profile Card (MODIFICADO: Fondo Blanco Translúcido)
     
     private var profileCard: some View {
         HStack(spacing: 12) {
@@ -345,8 +361,8 @@ struct ModeSelectionView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.3),
-                                Color.white.opacity(0.1)
+                                Color.white.opacity(0.8),
+                                Color(red: 0.9, green: 0.85, blue: 0.8).opacity(0.4)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -356,18 +372,18 @@ struct ModeSelectionView: View {
                 
                 Image(systemName: "person.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.black.opacity(0.7))
             }
             
             VStack(alignment: .leading, spacing: 3) {
                 Text(keyDisplayName)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.black.opacity(0.8))
                     .lineLimit(1)
                 
                 Text(supabase.currentKey?.label ?? "Usuario")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.black.opacity(0.5))
                     .lineLimit(1)
             }
             
@@ -380,10 +396,10 @@ struct ModeSelectionView: View {
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(keyStatusColor.opacity(0.12))
+                        .fill(keyStatusColor.opacity(0.15))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(keyStatusColor.opacity(0.3), lineWidth: 1)
+                                .stroke(keyStatusColor.opacity(0.4), lineWidth: 1)
                         )
                 )
         }
@@ -391,18 +407,19 @@ struct ModeSelectionView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.04))
+                .fill(Color.white.opacity(0.7))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
                 )
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
         )
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 15)
         .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
     }
     
-    // MARK: - Advanced Settings Button
+    // MARK: - Advanced Settings Button (MODIFICADO: Color Gris Oscuro)
     
     private var advancedSettingsButton: some View {
         Button {
@@ -414,7 +431,7 @@ struct ModeSelectionView: View {
                 Text("Ajustes avanzados")
                     .font(.system(size: 12, weight: .semibold))
             }
-            .foregroundStyle(.white.opacity(0.5))
+            .foregroundStyle(.black.opacity(0.5))
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
@@ -425,18 +442,18 @@ struct ModeSelectionView: View {
         }
     }
     
-    // MARK: - Footer
+    // MARK: - Footer (MODIFICADO: Color Gris Oscuro)
     
     private var footerSection: some View {
         Text(madeBy)
             .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.white.opacity(0.5))
+            .foregroundStyle(.black.opacity(0.4))
             .opacity(appeared ? 1 : 0)
             .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
     }
 }
 
-// MARK: - Scale Button Style
+// MARK: - Scale Button Style (SIN CAMBIOS)
 
 struct ScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
