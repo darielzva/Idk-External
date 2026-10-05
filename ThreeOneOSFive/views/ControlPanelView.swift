@@ -264,12 +264,13 @@ struct ControlPanelView: View {
                 keyInfoCard
                     .padding(.top, 16)
                 
+                // CATEGORY PICKER TIPO PASTILLA
                 categoryPicker
                     .padding(.top, 20)
                     .padding(.horizontal, 20)
                 
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         ForEach(toggles) { toggle in
                             ToggleRow(
                                 toggle: toggle,
@@ -340,7 +341,7 @@ struct ControlPanelView: View {
         }
     }
     
-    // MARK: - Header (MODIFICADO: Colores claros y nombre IDK)
+    // MARK: - Header
     
     private var header: some View {
         VStack(spacing: 12) {
@@ -412,7 +413,7 @@ struct ControlPanelView: View {
             }
             .padding(.horizontal, 20)
             
-            // NOMBRE CAMBIADO A "IDK"
+            // NOMBRE IDK
             Text("IDK")
                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                 .foregroundStyle(.black.opacity(0.7))
@@ -433,7 +434,7 @@ struct ControlPanelView: View {
             
             HStack(spacing: 6) {
                 Circle()
-                    .fill(Color(red: 0.3, green: 0.7, blue: 0.3)) // Verde suave
+                    .fill(Color(red: 0.3, green: 0.7, blue: 0.3))
                     .frame(width: 6, height: 6)
                     .shadow(color: Color(red: 0.3, green: 0.7, blue: 0.3).opacity(0.6), radius: 4)
                 Text("Sistema en línea")
@@ -444,7 +445,7 @@ struct ControlPanelView: View {
         }
     }
     
-    // MARK: - Key Info Card (MODIFICADO: Fondo Blanco Translúcido)
+    // MARK: - Key Info Card
     
     private var keyInfoCard: some View {
         HStack(spacing: 10) {
@@ -566,7 +567,7 @@ struct ControlPanelView: View {
         guard let key = supabase.currentKey else { return .black.opacity(0.5) }
         
         if key.isBanned {
-            return Color(red: 0.8, green: 0.3, blue: 0.3) // Rojo suave
+            return Color(red: 0.8, green: 0.3, blue: 0.3)
         }
         
         if let expiresAt = key.expiresAt,
@@ -576,17 +577,17 @@ struct ControlPanelView: View {
                 return Color(red: 0.8, green: 0.3, blue: 0.3)
             }
             if days <= 3 {
-                return Color(red: 0.85, green: 0.65, blue: 0.3) // Beige/Naranja suave
+                return Color(red: 0.85, green: 0.65, blue: 0.3)
             }
         }
         
-        return Color(red: 0.2, green: 0.6, blue: 0.2) // Verde suave para "activo"
+        return Color(red: 0.2, green: 0.6, blue: 0.2)
     }
     
-    // MARK: - Category Picker (MODIFICADO: Estilo Claro)
+    // MARK: - Category Picker (ESTILO PASTILLA)
     
     private var categoryPicker: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 10) {
             ForEach(PatchCategory.allCases) { category in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -594,35 +595,35 @@ struct ControlPanelView: View {
                     }
                 } label: {
                     Text(category.rawValue)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(
                             selectedCategory == category
                                 ? .black.opacity(0.8)
                                 : .black.opacity(0.4)
                         )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
                         .background(
-                            Group {
-                                if selectedCategory == category {
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white)
-                                        .shadow(color: .black.opacity(0.05), radius: 6)
-                                }
-                            }
+                            Capsule()
+                                .fill(selectedCategory == category ? Color.white : Color.white.opacity(0.4))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(
+                                            selectedCategory == category
+                                                ? Color.white.opacity(0.9)
+                                                : Color.white.opacity(0.6),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .shadow(
+                                    color: selectedCategory == category ? .black.opacity(0.05) : .clear,
+                                    radius: 4
+                                )
                         )
                 }
             }
+            Spacer()
         }
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
-                )
-        )
     }
     
     // MARK: - Lógica de toggle (SIN CAMBIOS)
@@ -695,7 +696,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche activado con éxito",
                         icon: "checkmark.circle.fill",
-                        color: Color(red: 0.2, green: 0.6, blue: 0.2) // Verde suave
+                        color: Color(red: 0.2, green: 0.6, blue: 0.2)
                     )
                 }
             } catch let error as PatchPackageError {
@@ -836,7 +837,7 @@ struct ControlPanelView: View {
     }
 }
 
-// MARK: - Fila de toggle (MODIFICADO: Estilo Claro)
+// MARK: - Fila de toggle (COMPACTA)
 
 private struct ToggleRow: View {
     let toggle: PatchToggle
@@ -845,36 +846,37 @@ private struct ToggleRow: View {
     let onToggle: (Bool) -> Void
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             ZStack {
                 Circle()
                     .fill(toggle.isBlocked 
                           ? Color.orange.opacity(0.15)
                           : Color.white.opacity(0.8))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 34, height: 34)
                 
                 if isProcessing {
                     ProgressView()
                         .tint(.black.opacity(0.6))
+                        .scaleEffect(0.8)
                 } else if toggle.isBlocked {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.orange)
                 } else {
                     Image(systemName: toggle.icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.black.opacity(0.7))
                 }
             }
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(toggle.displayName)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(toggle.isBlocked ? .black.opacity(0.4) : .black.opacity(0.8))
                 
                 if toggle.isBlocked {
                     Text("En mantenimiento")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(.orange.opacity(0.8))
                 }
             }
@@ -886,31 +888,32 @@ private struct ToggleRow: View {
                 set: { onToggle($0) }
             ))
             .labelsHidden()
-            .tint(.black.opacity(0.7)) // Toggle activo en negro suave
+            .tint(.black.opacity(0.7))
+            .scaleEffect(0.85)
             .disabled(isProcessing)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.7)) // Fondo blanco translúcido
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.7))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             toggle.isBlocked
                                 ? Color.orange.opacity(0.4)
                                 : (isOn
-                                    ? Color.black.opacity(0.15) // Borde activo
-                                    : Color.white.opacity(0.9)), // Borde inactivo
+                                    ? Color.black.opacity(0.15)
+                                    : Color.white.opacity(0.9)),
                             lineWidth: 1
                         )
                 )
-                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.04), radius: 5, x: 0, y: 2)
         )
     }
 }
 
-// MARK: - Toast (MODIFICADO: Estilo Claro)
+// MARK: - Toast
 
 struct ToastMessage: Equatable {
     let message: String
@@ -938,7 +941,7 @@ private struct ToastView: View {
         .padding(.vertical, 12)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.95)) // Fondo blanco
+                .fill(Color.white.opacity(0.95))
                 .overlay(
                     Capsule()
                         .stroke(Color.white.opacity(0.9), lineWidth: 1)
