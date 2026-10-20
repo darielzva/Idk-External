@@ -1,6 +1,66 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Tema visual (plata / hielo, combina con el fondo)
+
+private enum IDKTheme {
+    /// Nombre del asset de la imagen de fondo (Assets.xcassets)
+    static let backgroundImageName = "IDKBackground"
+
+    static let ink = Color(red: 0.09, green: 0.11, blue: 0.17)
+    static let inkSoft = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.55)
+    static let inkFaint = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.35)
+
+    static let silverLight = Color.white
+    static let silverMid = Color(red: 0.80, green: 0.83, blue: 0.88)
+    static let silverDark = Color(red: 0.55, green: 0.60, blue: 0.68)
+
+    /// Color de activo (azul hielo)
+    static let accent = Color(red: 0.28, green: 0.52, blue: 0.86)
+    static let warning = Color(red: 0.92, green: 0.58, blue: 0.20)
+
+    static var silverStroke: LinearGradient {
+        LinearGradient(
+            colors: [silverLight.opacity(0.95), silverMid.opacity(0.55), silverLight.opacity(0.85)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: - Estilo "cristal" reutilizable
+
+private struct IDKGlass: ViewModifier {
+    var radius: CGFloat = 16
+    var tint: Color = Color.white.opacity(0.30)
+    var strokeColor: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .fill(tint)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(strokeColor, lineWidth: 1)
+            )
+            .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 12, x: 0, y: 6)
+    }
+}
+
+private extension View {
+    func idkGlass(radius: CGFloat = 16,
+                  tint: Color = Color.white.opacity(0.30),
+                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)) -> some View {
+        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke))
+    }
+}
+
 // MARK: - Modelo de toggle
 
 struct PatchToggle: Identifiable {
@@ -139,7 +199,10 @@ struct ControlPanelView: View {
                 }
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 18) {
+                        // Espacio para dejar ver al ángel de la imagen de fondo
+                        Color.clear.frame(height: 110)
+                        
                         profileBanner
                         
                         statusChips
@@ -151,7 +214,7 @@ struct ControlPanelView: View {
                         footer
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 8)
                     .padding(.bottom, 40)
                 }
             }
@@ -198,28 +261,30 @@ struct ControlPanelView: View {
         }
     }
     
-    // MARK: - Background
+    // MARK: - Background (imagen fija de fondo)
     
     private var background: some View {
         ZStack {
-            Color(red: 0.93, green: 0.91, blue: 0.88)
+            // Color base por si la imagen no carga
+            Color(red: 0.88, green: 0.90, blue: 0.94)
                 .ignoresSafeArea()
             
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.9),
-                    Color.clear
-                ],
-                center: .init(x: 0.5, y: 0.1),
-                startRadius: 0,
-                endRadius: 500
-            )
-            .ignoresSafeArea()
+            // Imagen a pantalla completa, sin deformarse
+            Color.clear
+                .overlay(
+                    Image(IDKTheme.backgroundImageName)
+                        .resizable()
+                        .scaledToFill()
+                )
+                .clipped()
+                .ignoresSafeArea()
             
+            // Velo suave abajo para que el texto siempre se lea bien
             LinearGradient(
-                colors: [
-                    Color.clear,
-                    Color(red: 0.85, green: 0.82, blue: 0.78).opacity(0.4)
+                stops: [
+                    .init(color: Color.white.opacity(0.0), location: 0.0),
+                    .init(color: Color.white.opacity(0.10), location: 0.45),
+                    .init(color: Color.white.opacity(0.35), location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -228,27 +293,33 @@ struct ControlPanelView: View {
         }
     }
     
-    // MARK: - Header (logo centrado)
+    // MARK: - Header
+    
+    private func glassCircleButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(IDKTheme.ink.opacity(0.85))
+                .frame(width: 40, height: 40)
+                .background(
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(Circle().fill(Color.white.opacity(0.30)))
+                )
+                .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+                .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 8, x: 0, y: 4)
+        }
+    }
     
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             HStack {
                 // Botón atrás (izquierda)
-                Button {
+                glassCircleButton(systemName: "chevron.left") {
                     withAnimation {
                         session.selectedMode = nil
                         activeToggles.removeAll()
                     }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.black.opacity(0.7))
-                        .frame(width: 38, height: 38)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.6))
-                                .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1))
-                        )
                 }
                 
                 Spacer()
@@ -258,70 +329,48 @@ struct ControlPanelView: View {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [
-                                    Color.white.opacity(0.9),
-                                    Color.clear
-                                ],
+                                colors: [Color.white.opacity(0.9), Color.clear],
                                 center: .center,
-                                startRadius: 10,
+                                startRadius: 8,
                                 endRadius: 40
                             )
                         )
                         .frame(width: 70, height: 70)
                     
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white,
-                                    Color(red: 0.9, green: 0.85, blue: 0.8)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 2
-                        )
+                        .strokeBorder(IDKTheme.silverStroke, lineWidth: 2)
                         .frame(width: 54, height: 54)
-                        .shadow(color: Color.white.opacity(0.6), radius: 10)
+                        .shadow(color: Color.white.opacity(0.8), radius: 10)
                     
                     Image("Logo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 40, height: 40)
                         .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.1), radius: 3)
+                        .shadow(color: .black.opacity(0.15), radius: 3)
                 }
                 
                 Spacer()
                 
                 // Botón logout (derecha)
-                Button {
+                glassCircleButton(systemName: "rectangle.portrait.and.arrow.right") {
                     showLogoutConfirmation = true
-                } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.black.opacity(0.7))
-                        .frame(width: 38, height: 38)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.6))
-                                .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1))
-                        )
                 }
             }
             .padding(.horizontal, 20)
             
             // Nombre y subtítulo centrados
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text("IDK")
-                    .font(.system(size: 16, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.black.opacity(0.8))
-                    .tracking(3)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(IDKTheme.ink.opacity(0.75))
+                    .tracking(4)
                 
                 Text("Panel de control")
                     .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.black.opacity(0.85))
+                    .foregroundStyle(IDKTheme.ink)
             }
+            .shadow(color: Color.white.opacity(0.9), radius: 6)
         }
     }
     
@@ -333,30 +382,28 @@ struct ControlPanelView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.9),
-                                Color(red: 0.9, green: 0.85, blue: 0.8).opacity(0.6)
-                            ],
+                            colors: [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.7)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 42, height: 42)
+                    .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
                 
                 Image(systemName: "person.fill")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.7))
+                    .foregroundStyle(IDKTheme.ink.opacity(0.75))
             }
             
             VStack(alignment: .leading, spacing: 3) {
                 Text(supabase.currentKey?.keyValue ?? "SIN KEY")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.black.opacity(0.85))
+                    .foregroundStyle(IDKTheme.ink)
                     .lineLimit(1)
                 
                 Text(supabase.currentKey?.label ?? "Usuario")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.black.opacity(0.5))
+                    .foregroundStyle(IDKTheme.inkSoft)
                     .lineLimit(1)
             }
             
@@ -369,24 +416,20 @@ struct ControlPanelView: View {
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(keyStatusColor.opacity(0.15))
+                        .fill(Color.white.opacity(0.55))
                         .overlay(
                             Capsule()
-                                .stroke(keyStatusColor.opacity(0.4), lineWidth: 1)
+                                .fill(keyStatusColor.opacity(0.12))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(keyStatusColor.opacity(0.45), lineWidth: 1)
                         )
                 )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.7))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
-        )
+        .idkGlass(radius: 18)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 10)
         .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
@@ -400,24 +443,24 @@ struct ControlPanelView: View {
             chipView(
                 icon: "gamecontroller.fill",
                 text: mode.displayName,
-                color: .black.opacity(0.7),
-                iconColor: .black.opacity(0.5)
+                color: IDKTheme.ink.opacity(0.8),
+                iconColor: IDKTheme.accent
             )
             
             // Chip de iOS
             chipView(
                 icon: "applelogo",
                 text: "iOS \(UIDevice.current.systemVersion)",
-                color: .black.opacity(0.7),
-                iconColor: .black.opacity(0.5)
+                color: IDKTheme.ink.opacity(0.8),
+                iconColor: IDKTheme.inkSoft
             )
             
             // Chip de modelo
             chipView(
                 icon: "iphone",
                 text: deviceModelIdentifier,
-                color: .black.opacity(0.7),
-                iconColor: .black.opacity(0.5)
+                color: IDKTheme.ink.opacity(0.8),
+                iconColor: IDKTheme.inkSoft
             )
             
             Spacer()
@@ -436,13 +479,14 @@ struct ControlPanelView: View {
                 .foregroundStyle(color)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 9)
+        .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.6))
-                .overlay(Capsule().stroke(Color.white.opacity(0.9), lineWidth: 1))
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.30)))
         )
+        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
     }
     
     /// Identificador del modelo real (ej: iPhone12,1)
@@ -476,8 +520,8 @@ struct ControlPanelView: View {
                         }
                         .foregroundStyle(
                             selectedCategory == category
-                                ? .black.opacity(0.85)
-                                : .black.opacity(0.4)
+                                ? IDKTheme.ink
+                                : IDKTheme.inkFaint
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -493,27 +537,22 @@ struct ControlPanelView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.black.opacity(0.8),
-                                Color.black.opacity(0.5)
+                                IDKTheme.accent,
+                                IDKTheme.accent.opacity(0.4)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(width: width * 0.5, height: 3)
+                    .shadow(color: IDKTheme.accent.opacity(0.5), radius: 4)
                     .offset(x: width * CGFloat(index) + (width * 0.25))
                     .animation(.easeInOut(duration: 0.25), value: selectedCategory)
             }
             .frame(height: 3)
+            .padding(.bottom, 2)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
-                )
-        )
+        .idkGlass(radius: 16)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
     }
@@ -521,18 +560,19 @@ struct ControlPanelView: View {
     // MARK: - Patches List
     
     private var patchesList: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             if toggles.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "tray")
                         .font(.system(size: 32, weight: .light))
-                        .foregroundStyle(.black.opacity(0.2))
+                        .foregroundStyle(IDKTheme.inkFaint)
                     Text("No hay parches disponibles")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.black.opacity(0.4))
+                        .foregroundStyle(IDKTheme.inkSoft)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+                .padding(.vertical, 36)
+                .idkGlass(radius: 16)
             } else {
                 ForEach(toggles) { toggle in
                     ToggleRow(
@@ -556,17 +596,18 @@ struct ControlPanelView: View {
         HStack(spacing: 6) {
             Image(systemName: "bolt.fill")
                 .font(.system(size: 9))
-                .foregroundStyle(.black.opacity(0.3))
+                .foregroundStyle(IDKTheme.inkSoft)
             Text("IDK External v2.0")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.35))
+                .foregroundStyle(IDKTheme.inkSoft)
             Text("·")
                 .font(.system(size: 10))
-                .foregroundStyle(.black.opacity(0.2))
+                .foregroundStyle(IDKTheme.inkFaint)
             Text("Hecho por didierxitx7")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.black.opacity(0.35))
+                .foregroundStyle(IDKTheme.inkSoft)
         }
+        .shadow(color: Color.white.opacity(0.9), radius: 4)
         .padding(.top, 20)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
@@ -890,9 +931,19 @@ private struct ToggleRow: View {
     
     private var statusColor: Color {
         if toggle.isBlocked {
-            return .orange
+            return IDKTheme.warning
         }
-        return isOn ? Color(red: 0.2, green: 0.6, blue: 0.2) : Color.black.opacity(0.15)
+        return isOn ? IDKTheme.accent : IDKTheme.silverDark.opacity(0.45)
+    }
+    
+    private var rowStroke: AnyShapeStyle {
+        if toggle.isBlocked {
+            return AnyShapeStyle(IDKTheme.warning.opacity(0.5))
+        }
+        if isOn {
+            return AnyShapeStyle(IDKTheme.accent.opacity(0.55))
+        }
+        return AnyShapeStyle(IDKTheme.silverStroke)
     }
     
     var body: some View {
@@ -900,62 +951,68 @@ private struct ToggleRow: View {
             RoundedRectangle(cornerRadius: 2)
                 .fill(statusColor)
                 .frame(width: 3)
+                .shadow(color: isOn ? IDKTheme.accent.opacity(0.6) : .clear, radius: 4)
                 .padding(.vertical, 12)
-                .padding(.leading, 4)
+                .padding(.leading, 6)
             
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: toggle.isBlocked
-                                    ? [Color.orange.opacity(0.15), Color.orange.opacity(0.05)]
+                                    ? [IDKTheme.warning.opacity(0.22), IDKTheme.warning.opacity(0.08)]
                                     : (isOn
-                                        ? [Color(red: 0.2, green: 0.6, blue: 0.2).opacity(0.15), Color(red: 0.2, green: 0.6, blue: 0.2).opacity(0.05)]
-                                        : [Color.white.opacity(0.8), Color(red: 0.9, green: 0.85, blue: 0.8).opacity(0.4)]),
+                                        ? [IDKTheme.accent.opacity(0.25), IDKTheme.accent.opacity(0.08)]
+                                        : [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.55)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 36, height: 36)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
+                        )
+                        .frame(width: 38, height: 38)
                     
                     if isProcessing {
                         ProgressView()
-                            .tint(.black.opacity(0.6))
+                            .tint(IDKTheme.ink.opacity(0.6))
                             .scaleEffect(0.7)
                     } else if toggle.isBlocked {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(IDKTheme.warning)
                     } else {
                         Image(systemName: toggle.icon)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(isOn ? Color(red: 0.2, green: 0.6, blue: 0.2) : .black.opacity(0.7))
+                            .foregroundStyle(isOn ? IDKTheme.accent : IDKTheme.ink.opacity(0.75))
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(toggle.displayName)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(toggle.isBlocked ? .black.opacity(0.4) : .black.opacity(0.85))
+                        .foregroundStyle(toggle.isBlocked ? IDKTheme.inkFaint : IDKTheme.ink)
                         .lineLimit(1)
                     
                     HStack(spacing: 5) {
                         Text(toggle.category.rawValue.uppercased())
                             .font(.system(size: 8, weight: .bold))
                             .tracking(0.5)
-                            .foregroundStyle(.black.opacity(0.4))
-                            .padding(.horizontal, 5)
+                            .foregroundStyle(IDKTheme.inkSoft)
+                            .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(
                                 Capsule()
-                                    .fill(Color.black.opacity(0.05))
+                                    .fill(Color.white.opacity(0.55))
+                                    .overlay(Capsule().stroke(IDKTheme.silverMid.opacity(0.8), lineWidth: 0.5))
                             )
                         
                         if toggle.isBlocked {
                             Text("En mantenimiento")
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.orange.opacity(0.8))
+                                .foregroundStyle(IDKTheme.warning)
                         }
                     }
                 }
@@ -967,29 +1024,19 @@ private struct ToggleRow: View {
                     set: { onToggle($0) }
                 ))
                 .labelsHidden()
-                .tint(Color(red: 0.2, green: 0.6, blue: 0.2))
+                .tint(IDKTheme.accent)
                 .scaleEffect(0.85)
                 .disabled(isProcessing || toggle.isBlocked)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 11)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.7))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(
-                            toggle.isBlocked
-                                ? Color.orange.opacity(0.4)
-                                : (isOn
-                                    ? Color(red: 0.2, green: 0.6, blue: 0.2).opacity(0.3)
-                                    : Color.white.opacity(0.9)),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: .black.opacity(0.04), radius: 5, x: 0, y: 2)
+        .idkGlass(
+            radius: 16,
+            tint: isOn ? IDKTheme.accent.opacity(0.10) : Color.white.opacity(0.30),
+            stroke: rowStroke
         )
+        .animation(.easeInOut(duration: 0.2), value: isOn)
     }
 }
 
@@ -1015,18 +1062,16 @@ private struct ToastView: View {
                 .foregroundStyle(message.color)
             Text(message.message)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.8))
+                .foregroundStyle(IDKTheme.ink)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.95))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
+                .fill(.regularMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.45)))
         )
+        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+        .shadow(color: IDKTheme.silverDark.opacity(0.35), radius: 14, y: 6)
     }
 }
