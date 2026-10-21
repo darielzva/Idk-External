@@ -34,16 +34,20 @@ private struct IDKGlass: ViewModifier {
     var radius: CGFloat = 16
     var tint: Color = Color.white.opacity(0.30)
     var strokeColor: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)
+    /// false = sin desenfoque, deja ver la foto de fondo con nitidez
+    var useMaterial: Bool = true
 
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
+                ZStack {
+                    if useMaterial {
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(tint)
-                    )
+                            .fill(.ultraThinMaterial)
+                    }
+                    RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .fill(tint)
+                }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -56,8 +60,9 @@ private struct IDKGlass: ViewModifier {
 private extension View {
     func idkGlass(radius: CGFloat = 16,
                   tint: Color = Color.white.opacity(0.30),
-                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)) -> some View {
-        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke))
+                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke),
+                  material: Bool = true) -> some View {
+        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke, useMaterial: material))
     }
 }
 
@@ -994,6 +999,7 @@ private struct ToggleRow: View {
                     Text(toggle.displayName)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(toggle.isBlocked ? IDKTheme.inkFaint : IDKTheme.ink)
+                        .shadow(color: Color.white.opacity(0.9), radius: 3)
                         .lineLimit(1)
                     
                     HStack(spacing: 5) {
@@ -1033,8 +1039,9 @@ private struct ToggleRow: View {
         }
         .idkGlass(
             radius: 16,
-            tint: isOn ? IDKTheme.accent.opacity(0.10) : Color.white.opacity(0.30),
-            stroke: rowStroke
+            tint: isOn ? IDKTheme.accent.opacity(0.07) : Color.white.opacity(0.08),
+            stroke: rowStroke,
+            material: false
         )
         .animation(.easeInOut(duration: 0.2), value: isOn)
     }
