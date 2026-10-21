@@ -1,6 +1,68 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Tema visual (plata / hielo, combina con el fondo)
+
+private enum IDKTheme {
+    /// Nombre del asset de la imagen de fondo (Assets.xcassets)
+    static let backgroundImageName = "IDKBackground"
+
+    static let ink = Color(red: 0.09, green: 0.11, blue: 0.17)
+    static let inkSoft = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.55)
+    static let inkFaint = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.35)
+
+    static let silverLight = Color.white
+    static let silverMid = Color(red: 0.80, green: 0.83, blue: 0.88)
+    static let silverDark = Color(red: 0.55, green: 0.60, blue: 0.68)
+
+    static let accent = Color(red: 0.28, green: 0.52, blue: 0.86)
+
+    static var silverStroke: LinearGradient {
+        LinearGradient(
+            colors: [silverLight.opacity(0.95), silverMid.opacity(0.55), silverLight.opacity(0.85)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: - Estilo "cristal" reutilizable
+
+private struct IDKGlass: ViewModifier {
+    var radius: CGFloat = 16
+    var tint: Color = Color.white.opacity(0.30)
+    var strokeColor: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)
+    var strokeWidth: CGFloat = 1
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .fill(tint)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(strokeColor, lineWidth: strokeWidth)
+            )
+            .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 12, x: 0, y: 6)
+    }
+}
+
+private extension View {
+    func idkGlass(radius: CGFloat = 16,
+                  tint: Color = Color.white.opacity(0.30),
+                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke),
+                  strokeWidth: CGFloat = 1) -> some View {
+        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke, strokeWidth: strokeWidth))
+    }
+}
+
+// MARK: - Login
+
 struct LoginView: View {
     @ObservedObject var session: AppSession
     @EnvironmentObject private var supabase: SupabaseService
@@ -17,45 +79,26 @@ struct LoginView: View {
         ZStack {
             background
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 40)
-                    
-                    topBadge
-                    
-                    Spacer().frame(height: 30)
-                    
-                    logoSection
-                    
-                    Spacer().frame(height: 30)
-                    
-                    titleSection
-                    
-                    Spacer().frame(height: 36)
-                    
-                    welcomeCard
-                    
-                    Spacer().frame(height: 20)
-                    
-                    passwordField
-                    
-                    Spacer().frame(height: 14)
-                    
-                    loginButton
-                    
-                    if showError {
-                        errorMessageView
+            GeometryReader { geo in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 24)
+                        
+                        topBadge
+                        
+                        // Empuja el formulario hacia abajo para dejar ver
+                        // al ángel y el logo de la imagen de fondo
+                        Spacer(minLength: 200)
+                        
+                        loginPanel
+                        
+                        Spacer().frame(height: 24)
+                        
+                        footerSection
+                        
+                        Spacer().frame(height: 24)
                     }
-                    
-                    Spacer().frame(height: 24)
-                    
-                    statusIndicators
-                    
-                    Spacer().frame(height: 40)
-                    
-                    footerSection
-                    
-                    Spacer().frame(height: 30)
+                    .frame(minHeight: geo.size.height)
                 }
             }
         }
@@ -72,255 +115,218 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Background (MODIFICADO: Tonos claros)
+    // MARK: - Background (imagen fija de fondo)
     
     private var background: some View {
         ZStack {
-            // Fondo base: Blanco hueso / Perla claro
-            Color(red: 0.93, green: 0.91, blue: 0.88)
+            // Color base por si la imagen no carga
+            Color(red: 0.88, green: 0.90, blue: 0.94)
                 .ignoresSafeArea()
             
-            // Gradiente radial: Brillo blanco puro en la parte superior
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(glowAnimation ? 0.9 : 0.6),
-                    Color.clear
-                ],
-                center: .init(x: 0.5, y: 0.15),
-                startRadius: 0,
-                endRadius: 400
-            )
-            .ignoresSafeArea()
+            // Imagen a pantalla completa, sin deformarse
+            Color.clear
+                .overlay(
+                    Image(IDKTheme.backgroundImageName)
+                        .resizable()
+                        .scaledToFill()
+                )
+                .clipped()
+                .ignoresSafeArea()
             
-            // Gradiente sutil beige en la parte inferior
+            // Velo suave abajo para que el formulario se lea bien
             LinearGradient(
-                colors: [
-                    Color.clear,
-                    Color(red: 0.85, green: 0.82, blue: 0.78).opacity(0.4)
+                stops: [
+                    .init(color: Color.white.opacity(0.0), location: 0.0),
+                    .init(color: Color.white.opacity(0.08), location: 0.5),
+                    .init(color: Color.white.opacity(0.35), location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-            
-            // Partículas blancas sutiles
-            GeometryReader { geo in
-                ForEach(0..<25, id: \.self) { _ in
-                    Circle()
-                        .fill(Color.white.opacity(0.6))
-                        .frame(width: 2, height: 2)
-                        .position(
-                            x: CGFloat.random(in: 0...geo.size.width),
-                            y: CGFloat.random(in: 0...geo.size.height)
-                        )
-                        .opacity(glowAnimation ? 0.9 : 0.3)
-                        .shadow(color: .white.opacity(0.8), radius: 2)
-                }
-            }
-            .ignoresSafeArea()
         }
     }
     
-    // MARK: - Top Badge (MODIFICADO: Estilo claro)
+    // MARK: - Top Badge
     
     private var topBadge: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(Color(red: 0.2, green: 0.6, blue: 0.2)) // Verde suave
+                .fill(Color(red: 0.2, green: 0.6, blue: 0.2))
                 .frame(width: 6, height: 6)
                 .shadow(color: Color(red: 0.2, green: 0.6, blue: 0.2).opacity(0.6), radius: 4)
             Text("SISTEMA ACTIVO")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(2)
-                .foregroundStyle(.black.opacity(0.7))
+                .foregroundStyle(IDKTheme.ink.opacity(0.8))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.7))
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.05), radius: 6)
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(Color.white.opacity(0.30)))
         )
+        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+        .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 8, y: 4)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
     }
     
-    // MARK: - Logo Section (MODIFICADO: Acentos perla)
+    // MARK: - Panel de login (todo el formulario en una tarjeta de cristal)
     
-    private var logoSection: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(glowAnimation ? 0.9 : 0.5),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 40,
-                        endRadius: 110
-                    )
-                )
-                .frame(width: 220, height: 220)
+    private var loginPanel: some View {
+        VStack(spacing: 18) {
+            panelHeader
             
-            Circle()
-                .stroke(
-                    AngularGradient(
-                        colors: [
-                            Color.white.opacity(0),
-                            Color.white.opacity(0.9),
-                            Color.white.opacity(0),
-                            Color.white.opacity(0.6),
-                            Color.white.opacity(0)
-                        ],
-                        center: .center
-                    ),
-                    style: StrokeStyle(lineWidth: 1.5, dash: [4, 8])
-                )
-                .frame(width: 150, height: 150)
-                .rotationEffect(.degrees(rotationAngle))
+            welcomeCard
             
-            Circle()
-                .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                .frame(width: 120, height: 120)
+            passwordField
             
-            Circle()
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white,
-                            Color(red: 0.9, green: 0.85, blue: 0.8)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 3
-                )
-                .frame(width: 100, height: 100)
-                .shadow(color: Color.white.opacity(0.8), radius: glowAnimation ? 25 : 12)
+            loginButton
             
-            Image("Logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 76, height: 76)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.1), radius: 8)
+            if showError {
+                errorMessageView
+            }
+            
+            statusIndicators
         }
-        .frame(height: 220)
+        .padding(.horizontal, 18)
+        .padding(.top, 22)
+        .padding(.bottom, 20)
+        .idkGlass(radius: 28, tint: Color.white.opacity(0.38))
+        .padding(.horizontal, 20)
         .opacity(appeared ? 1 : 0)
-        .scaleEffect(appeared ? 1 : 0.9)
-        .animation(.easeOut(duration: 0.6).delay(0.15), value: appeared)
+        .offset(y: appeared ? 0 : 24)
+        .animation(.easeOut(duration: 0.6).delay(0.25), value: appeared)
     }
     
-    // MARK: - Title Section (MODIFICADO: Nombre IDK y colores oscuros)
+    // MARK: - Panel Header (logo pequeño + nombre)
     
-    private var titleSection: some View {
+    private var panelHeader: some View {
         VStack(spacing: 10) {
-            Text("IDK")
-                .font(.system(size: 36, weight: .heavy, design: .rounded))
-                .tracking(4)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.2, green: 0.2, blue: 0.2),
-                            Color(red: 0.4, green: 0.4, blue: 0.4)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(glowAnimation ? 0.95 : 0.6),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 14,
+                            endRadius: 52
+                        )
                     )
-                )
-                .shadow(color: .black.opacity(0.1), radius: 8)
+                    .frame(width: 104, height: 104)
+                
+                Circle()
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color.white.opacity(0),
+                                Color.white.opacity(0.95),
+                                Color.white.opacity(0),
+                                IDKTheme.silverMid.opacity(0.9),
+                                Color.white.opacity(0)
+                            ],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [4, 8])
+                    )
+                    .frame(width: 84, height: 84)
+                    .rotationEffect(.degrees(rotationAngle))
+                
+                Circle()
+                    .strokeBorder(IDKTheme.silverStroke, lineWidth: 2.5)
+                    .frame(width: 66, height: 66)
+                    .shadow(color: Color.white.opacity(0.9), radius: glowAnimation ? 14 : 6)
+                
+                Image("Logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.15), radius: 4)
+            }
+            .frame(height: 100)
             
             HStack(spacing: 8) {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [.clear, .black.opacity(0.4), .clear],
+                            colors: [.clear, IDKTheme.ink.opacity(0.4), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: 40, height: 1)
+                    .frame(width: 36, height: 1)
                 
-                Text("EXTERNAL")
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(5)
-                    .foregroundStyle(.black.opacity(0.6))
+                Text("IDK EXTERNAL")
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .tracking(4)
+                    .foregroundStyle(IDKTheme.ink.opacity(0.8))
                 
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [.clear, .black.opacity(0.4), .clear],
+                            colors: [.clear, IDKTheme.ink.opacity(0.4), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: 40, height: 1)
+                    .frame(width: 36, height: 1)
             }
         }
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.25), value: appeared)
     }
     
-    // MARK: - Welcome Card (MODIFICADO: Fondo blanco translúcido)
+    // MARK: - Welcome Card
     
     private var welcomeCard: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.8))
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
                     .frame(width: 40, height: 40)
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.7))
+                    .foregroundStyle(IDKTheme.accent)
             }
             
             VStack(alignment: .leading, spacing: 3) {
                 Text("Acceso restringido")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.black.opacity(0.8))
+                    .foregroundStyle(IDKTheme.ink)
                 Text("Introduce tu clave para continuar")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.black.opacity(0.5))
+                    .foregroundStyle(IDKTheme.inkSoft)
             }
             
             Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.black.opacity(0.3))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.7))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-        )
-        .padding(.horizontal, 28)
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.35), value: appeared)
+        .idkGlass(radius: 16, tint: Color.white.opacity(0.25))
     }
     
-    // MARK: - Password Field (MODIFICADO: Fondo blanco)
+    // MARK: - Password Field
     
     private var passwordField: some View {
         HStack(spacing: 12) {
             Image(systemName: "key.fill")
-                .foregroundStyle(.black.opacity(0.7))
+                .foregroundStyle(IDKTheme.ink.opacity(0.7))
                 .font(.system(size: 15))
             
             SecureField("Introduce tu clave...", text: $password)
                 .textFieldStyle(.plain)
-                .foregroundStyle(.black.opacity(0.8))
+                .foregroundStyle(IDKTheme.ink)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .submitLabel(.go)
@@ -332,41 +338,32 @@ struct LoginView: View {
                     password = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.black.opacity(0.4))
+                        .foregroundStyle(IDKTheme.inkFaint)
                         .font(.system(size: 14))
                 }
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(
-                            showError
-                                ? Color.red.opacity(0.6)
-                                : Color.white.opacity(0.9),
-                            lineWidth: 1.5
-                        )
-                )
-                .shadow(color: .black.opacity(0.05), radius: 10)
+        .idkGlass(
+            radius: 16,
+            tint: Color.white.opacity(0.55),
+            stroke: showError
+                ? AnyShapeStyle(Color.red.opacity(0.6))
+                : AnyShapeStyle(IDKTheme.silverStroke),
+            strokeWidth: showError ? 1.5 : 1
         )
-        .padding(.horizontal, 28)
         .offset(x: shakeOffset)
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.45), value: appeared)
     }
     
-    // MARK: - Login Button (MODIFICADO: Estilo claro)
+    // MARK: - Login Button
     
     private var loginButton: some View {
         Button(action: attemptLogin) {
             HStack(spacing: 10) {
                 if isVerifying {
                     ProgressView()
-                        .tint(.black)
+                        .tint(.white)
                         .scaleEffect(0.9)
                     Text("VERIFICANDO...")
                         .font(.system(size: 15, weight: .heavy))
@@ -379,34 +376,42 @@ struct LoginView: View {
                         .tracking(2)
                 }
             }
-            .foregroundStyle(.black)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white,
-                                Color(white: 0.92)
+                                Color(red: 0.16, green: 0.20, blue: 0.30),
+                                Color(red: 0.09, green: 0.11, blue: 0.17)
                             ],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                     )
-                    .shadow(color: .black.opacity(0.1), radius: 12, y: 5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.55), Color.white.opacity(0.05)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: IDKTheme.accent.opacity(0.35), radius: 14, y: 6)
             )
         }
-        .padding(.horizontal, 28)
         .disabled(password.isEmpty || isVerifying)
-        .opacity((password.isEmpty || isVerifying) ? 0.4 : 1.0)
+        .opacity((password.isEmpty || isVerifying) ? 0.45 : 1.0)
         .scaleEffect(password.isEmpty ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.5), value: appeared)
     }
     
-    // MARK: - Error Message (MODIFICADO: Color rojo suave)
+    // MARK: - Error Message
     
     private var errorMessageView: some View {
         HStack(spacing: 6) {
@@ -415,21 +420,25 @@ struct LoginView: View {
             Text(errorMessage)
                 .font(.system(size: 12, weight: .semibold))
         }
-        .foregroundStyle(Color(red: 0.8, green: 0.3, blue: 0.3)) // Rojo suave
-        .padding(.top, 12)
+        .foregroundStyle(Color(red: 0.78, green: 0.25, blue: 0.25))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(Color.white.opacity(0.65))
+                .overlay(Capsule().stroke(Color.red.opacity(0.25), lineWidth: 1))
+        )
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
-    // MARK: - Status Indicators (MODIFICADO: Colores claros)
+    // MARK: - Status Indicators
     
     private var statusIndicators: some View {
         HStack(spacing: 20) {
             statusDot(color: supabase.isConnected ? Color(red: 0.2, green: 0.6, blue: 0.2) : .gray, label: "Online")
-            statusDot(color: .black.opacity(0.4), label: "v2.0")
-            statusDot(color: .black.opacity(0.4), label: "Beta")
+            statusDot(color: IDKTheme.accent.opacity(0.8), label: "v2.0")
+            statusDot(color: IDKTheme.silverDark, label: "Beta")
         }
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.6), value: appeared)
     }
     
     private func statusDot(color: Color, label: String) -> some View {
@@ -440,23 +449,24 @@ struct LoginView: View {
                 .shadow(color: color.opacity(0.6), radius: 3)
             Text(label)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.5))
+                .foregroundStyle(IDKTheme.inkSoft)
         }
     }
     
-    // MARK: - Footer (MODIFICADO: Color claro)
+    // MARK: - Footer
     
     private var footerSection: some View {
         HStack(spacing: 6) {
             Image(systemName: "hammer.fill")
                 .font(.system(size: 9))
-                .foregroundStyle(.black.opacity(0.4))
+                .foregroundStyle(IDKTheme.inkSoft)
             Text("Hecho por didierxitx7")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.black.opacity(0.5))
+                .foregroundStyle(IDKTheme.inkSoft)
         }
+        .shadow(color: Color.white.opacity(0.9), radius: 4)
         .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.7), value: appeared)
+        .animation(.easeOut(duration: 0.6).delay(0.5), value: appeared)
     }
     
     // MARK: - Login Logic (SIN CAMBIOS)
