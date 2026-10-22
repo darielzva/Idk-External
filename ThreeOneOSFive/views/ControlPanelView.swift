@@ -1,27 +1,29 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Tema visual (plata / hielo, combina con el fondo)
+// MARK: - Tema visual XL3 (oscuro + amarillo paja + rojo, combina con el fondo)
 
-private enum IDKTheme {
+private enum XLTheme {
     /// Nombre del asset de la imagen de fondo (Assets.xcassets)
-    static let backgroundImageName = "IDKBackground"
+    static let backgroundImageName = "XLBackground"
 
-    static let ink = Color(red: 0.09, green: 0.11, blue: 0.17)
-    static let inkSoft = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.55)
-    static let inkFaint = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.35)
+    // Texto claro sobre cristal oscuro
+    static let ink = Color.white
+    static let inkSoft = Color.white.opacity(0.62)
+    static let inkFaint = Color.white.opacity(0.38)
 
-    static let silverLight = Color.white
-    static let silverMid = Color(red: 0.80, green: 0.83, blue: 0.88)
-    static let silverDark = Color(red: 0.55, green: 0.60, blue: 0.68)
+    /// Amarillo del sombrero de paja
+    static let accent = Color(red: 0.97, green: 0.78, blue: 0.20)
+    /// Rojo de la banda del sombrero
+    static let accentRed = Color(red: 0.86, green: 0.17, blue: 0.20)
+    static let warning = Color(red: 1.00, green: 0.55, blue: 0.20)
+    static let ok = Color(red: 0.30, green: 0.80, blue: 0.42)
+    static let danger = Color(red: 1.00, green: 0.42, blue: 0.42)
 
-    /// Color de activo (azul hielo)
-    static let accent = Color(red: 0.28, green: 0.52, blue: 0.86)
-    static let warning = Color(red: 0.92, green: 0.58, blue: 0.20)
-
-    static var silverStroke: LinearGradient {
+    /// Borde del cristal: amarillo -> casi transparente -> rojo
+    static var edgeStroke: LinearGradient {
         LinearGradient(
-            colors: [silverLight.opacity(0.95), silverMid.opacity(0.55), silverLight.opacity(0.85)],
+            colors: [accent.opacity(0.65), Color.white.opacity(0.10), accentRed.opacity(0.55)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -30,10 +32,10 @@ private enum IDKTheme {
 
 // MARK: - Estilo "cristal" reutilizable
 
-private struct IDKGlass: ViewModifier {
+private struct XLGlass: ViewModifier {
     var radius: CGFloat = 16
-    var tint: Color = Color.white.opacity(0.30)
-    var strokeColor: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)
+    var tint: Color = Color.black.opacity(0.35)
+    var strokeColor: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke)
     /// false = sin desenfoque, deja ver la foto de fondo con nitidez
     var useMaterial: Bool = true
 
@@ -43,7 +45,7 @@ private struct IDKGlass: ViewModifier {
                 ZStack {
                     if useMaterial {
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
                     }
                     RoundedRectangle(cornerRadius: radius, style: .continuous)
                         .fill(tint)
@@ -53,16 +55,16 @@ private struct IDKGlass: ViewModifier {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(strokeColor, lineWidth: 1)
             )
-            .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 12, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
     }
 }
 
 private extension View {
-    func idkGlass(radius: CGFloat = 16,
-                  tint: Color = Color.white.opacity(0.30),
-                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke),
+    func xlGlass(radius: CGFloat = 16,
+                  tint: Color = Color.black.opacity(0.35),
+                  stroke: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke),
                   material: Bool = true) -> some View {
-        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke, useMaterial: material))
+        modifier(XLGlass(radius: radius, tint: tint, strokeColor: stroke, useMaterial: material))
     }
 }
 
@@ -205,8 +207,8 @@ struct ControlPanelView: View {
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 18) {
-                        // Espacio para dejar ver al ángel de la imagen de fondo
-                        Color.clear.frame(height: 110)
+                        // Espacio para dejar ver el sombrero de la imagen de fondo
+                        Color.clear.frame(height: 170)
                         
                         profileBanner
                         
@@ -271,13 +273,13 @@ struct ControlPanelView: View {
     private var background: some View {
         ZStack {
             // Color base por si la imagen no carga
-            Color(red: 0.88, green: 0.90, blue: 0.94)
+            Color.black
                 .ignoresSafeArea()
             
             // Imagen a pantalla completa, sin deformarse
             Color.clear
                 .overlay(
-                    Image(IDKTheme.backgroundImageName)
+                    Image(XLTheme.backgroundImageName)
                         .resizable()
                         .scaledToFill()
                 )
@@ -287,9 +289,9 @@ struct ControlPanelView: View {
             // Velo suave abajo para que el texto siempre se lea bien
             LinearGradient(
                 stops: [
-                    .init(color: Color.white.opacity(0.0), location: 0.0),
-                    .init(color: Color.white.opacity(0.10), location: 0.45),
-                    .init(color: Color.white.opacity(0.35), location: 1.0)
+                    .init(color: Color.black.opacity(0.10), location: 0.0),
+                    .init(color: Color.black.opacity(0.15), location: 0.45),
+                    .init(color: Color.black.opacity(0.55), location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -304,15 +306,15 @@ struct ControlPanelView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(IDKTheme.ink.opacity(0.85))
+                .foregroundStyle(XLTheme.ink.opacity(0.85))
                 .frame(width: 40, height: 40)
                 .background(
                     Circle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(Circle().fill(Color.white.opacity(0.30)))
+                        .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                        .overlay(Circle().fill(Color.black.opacity(0.35)))
                 )
-                .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
-                .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 8, x: 0, y: 4)
+                .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+                .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -334,7 +336,7 @@ struct ControlPanelView: View {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [Color.white.opacity(0.9), Color.clear],
+                                colors: [XLTheme.accent.opacity(0.35), Color.clear],
                                 center: .center,
                                 startRadius: 8,
                                 endRadius: 40
@@ -343,9 +345,9 @@ struct ControlPanelView: View {
                         .frame(width: 70, height: 70)
                     
                     Circle()
-                        .strokeBorder(IDKTheme.silverStroke, lineWidth: 2)
+                        .strokeBorder(XLTheme.edgeStroke, lineWidth: 2)
                         .frame(width: 54, height: 54)
-                        .shadow(color: Color.white.opacity(0.8), radius: 10)
+                        .shadow(color: XLTheme.accent.opacity(0.7), radius: 10)
                     
                     Image("Logo")
                         .resizable()
@@ -366,16 +368,16 @@ struct ControlPanelView: View {
             
             // Nombre y subtítulo centrados
             VStack(spacing: 2) {
-                Text("IDK")
+                Text("XL3 IOS NEW")
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundStyle(IDKTheme.ink.opacity(0.75))
-                    .tracking(4)
+                    .foregroundStyle(XLTheme.ink.opacity(0.75))
+                    .tracking(3)
                 
                 Text("Panel de control")
                     .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundStyle(IDKTheme.ink)
+                    .foregroundStyle(XLTheme.ink)
             }
-            .shadow(color: Color.white.opacity(0.9), radius: 6)
+            .shadow(color: Color.black.opacity(0.85), radius: 6)
         }
     }
     
@@ -387,28 +389,28 @@ struct ControlPanelView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.7)],
+                            colors: [Color.white.opacity(0.20), Color.white.opacity(0.06)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 42, height: 42)
-                    .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+                    .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
                 
                 Image(systemName: "person.fill")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(IDKTheme.ink.opacity(0.75))
+                    .foregroundStyle(XLTheme.ink.opacity(0.75))
             }
             
             VStack(alignment: .leading, spacing: 3) {
                 Text(supabase.currentKey?.keyValue ?? "SIN KEY")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(IDKTheme.ink)
+                    .foregroundStyle(XLTheme.ink)
                     .lineLimit(1)
                 
                 Text(supabase.currentKey?.label ?? "Usuario")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(IDKTheme.inkSoft)
+                    .foregroundStyle(XLTheme.inkSoft)
                     .lineLimit(1)
             }
             
@@ -421,7 +423,7 @@ struct ControlPanelView: View {
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(Color.white.opacity(0.55))
+                        .fill(Color.black.opacity(0.35))
                         .overlay(
                             Capsule()
                                 .fill(keyStatusColor.opacity(0.12))
@@ -434,7 +436,7 @@ struct ControlPanelView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .idkGlass(radius: 18)
+        .xlGlass(radius: 18)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 10)
         .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
@@ -448,24 +450,24 @@ struct ControlPanelView: View {
             chipView(
                 icon: "gamecontroller.fill",
                 text: mode.displayName,
-                color: IDKTheme.ink.opacity(0.8),
-                iconColor: IDKTheme.accent
+                color: XLTheme.ink.opacity(0.8),
+                iconColor: XLTheme.accent
             )
             
             // Chip de iOS
             chipView(
                 icon: "applelogo",
                 text: "iOS \(UIDevice.current.systemVersion)",
-                color: IDKTheme.ink.opacity(0.8),
-                iconColor: IDKTheme.inkSoft
+                color: XLTheme.ink.opacity(0.8),
+                iconColor: XLTheme.inkSoft
             )
             
             // Chip de modelo
             chipView(
                 icon: "iphone",
                 text: deviceModelIdentifier,
-                color: IDKTheme.ink.opacity(0.8),
-                iconColor: IDKTheme.inkSoft
+                color: XLTheme.ink.opacity(0.8),
+                iconColor: XLTheme.inkSoft
             )
             
             Spacer()
@@ -488,10 +490,10 @@ struct ControlPanelView: View {
         .padding(.vertical, 6)
         .background(
             Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(Color.white.opacity(0.30)))
+                .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                .overlay(Capsule().fill(Color.black.opacity(0.35)))
         )
-        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
     }
     
     /// Identificador del modelo real (ej: iPhone12,1)
@@ -525,8 +527,8 @@ struct ControlPanelView: View {
                         }
                         .foregroundStyle(
                             selectedCategory == category
-                                ? IDKTheme.ink
-                                : IDKTheme.inkFaint
+                                ? XLTheme.ink
+                                : XLTheme.inkFaint
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -542,22 +544,22 @@ struct ControlPanelView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                IDKTheme.accent,
-                                IDKTheme.accent.opacity(0.4)
+                                XLTheme.accent,
+                                XLTheme.accent.opacity(0.4)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(width: width * 0.5, height: 3)
-                    .shadow(color: IDKTheme.accent.opacity(0.5), radius: 4)
+                    .shadow(color: XLTheme.accent.opacity(0.5), radius: 4)
                     .offset(x: width * CGFloat(index) + (width * 0.25))
                     .animation(.easeInOut(duration: 0.25), value: selectedCategory)
             }
             .frame(height: 3)
             .padding(.bottom, 2)
         }
-        .idkGlass(radius: 16)
+        .xlGlass(radius: 16)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
     }
@@ -570,14 +572,14 @@ struct ControlPanelView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "tray")
                         .font(.system(size: 32, weight: .light))
-                        .foregroundStyle(IDKTheme.inkFaint)
+                        .foregroundStyle(XLTheme.inkFaint)
                     Text("No hay parches disponibles")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(IDKTheme.inkSoft)
+                        .foregroundStyle(XLTheme.inkSoft)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 36)
-                .idkGlass(radius: 16)
+                .xlGlass(radius: 16)
             } else {
                 ForEach(toggles) { toggle in
                     ToggleRow(
@@ -601,18 +603,18 @@ struct ControlPanelView: View {
         HStack(spacing: 6) {
             Image(systemName: "bolt.fill")
                 .font(.system(size: 9))
-                .foregroundStyle(IDKTheme.inkSoft)
-            Text("IDK External v2.0")
+                .foregroundStyle(XLTheme.inkSoft)
+            Text("XL3 IOS NEW v2.0")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(IDKTheme.inkSoft)
+                .foregroundStyle(XLTheme.inkSoft)
             Text("·")
                 .font(.system(size: 10))
-                .foregroundStyle(IDKTheme.inkFaint)
+                .foregroundStyle(XLTheme.inkFaint)
             Text("Hecho por didierxitx7")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(IDKTheme.inkSoft)
+                .foregroundStyle(XLTheme.inkSoft)
         }
-        .shadow(color: Color.white.opacity(0.9), radius: 4)
+        .shadow(color: Color.black.opacity(0.85), radius: 4)
         .padding(.top, 20)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
@@ -695,24 +697,24 @@ struct ControlPanelView: View {
     }
     
     private var keyStatusColor: Color {
-        guard let key = supabase.currentKey else { return .black.opacity(0.5) }
+        guard let key = supabase.currentKey else { return XLTheme.inkSoft }
         
         if key.isBanned {
-            return Color(red: 0.8, green: 0.3, blue: 0.3)
+            return XLTheme.danger
         }
         
         if let expiresAt = key.expiresAt,
            let date = parseSupabaseDate(expiresAt) {
             let days = Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0
             if days < 0 {
-                return Color(red: 0.8, green: 0.3, blue: 0.3)
+                return XLTheme.danger
             }
             if days <= 3 {
-                return Color(red: 0.85, green: 0.65, blue: 0.3)
+                return XLTheme.warning
             }
         }
         
-        return Color(red: 0.2, green: 0.6, blue: 0.2)
+        return XLTheme.ok
     }
     
     // MARK: - Lógica de toggle (SIN CAMBIOS)
@@ -760,7 +762,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche no encontrado: \(toggle.fullFilename)",
                             icon: "exclamationmark.triangle.fill",
-                            color: Color(red: 0.8, green: 0.3, blue: 0.3)
+                            color: XLTheme.danger
                         )
                     }
                     return
@@ -785,7 +787,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche activado con éxito",
                         icon: "checkmark.circle.fill",
-                        color: Color(red: 0.2, green: 0.6, blue: 0.2)
+                        color: XLTheme.ok
                     )
                 }
             } catch let error as PatchPackageError {
@@ -794,7 +796,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error: \(error.localizationKey)",
                         icon: "exclamationmark.triangle.fill",
-                        color: Color(red: 0.8, green: 0.3, blue: 0.3)
+                        color: XLTheme.danger
                     )
                 }
             } catch {
@@ -803,7 +805,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al activar el parche",
                         icon: "exclamationmark.triangle.fill",
-                        color: Color(red: 0.8, green: 0.3, blue: 0.3)
+                        color: XLTheme.danger
                     )
                 }
             }
@@ -822,7 +824,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche desactivado",
                             icon: "xmark.circle.fill",
-                            color: .black.opacity(0.6)
+                            color: .white.opacity(0.75)
                         )
                     }
                     return
@@ -835,7 +837,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche desactivado",
                             icon: "xmark.circle.fill",
-                            color: .black.opacity(0.6)
+                            color: .white.opacity(0.75)
                         )
                     }
                     return
@@ -850,7 +852,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche desactivado",
                         icon: "xmark.circle.fill",
-                        color: .black.opacity(0.6)
+                        color: .white.opacity(0.75)
                     )
                 }
             } catch {
@@ -859,7 +861,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al desactivar",
                         icon: "exclamationmark.triangle.fill",
-                        color: Color(red: 0.8, green: 0.3, blue: 0.3)
+                        color: XLTheme.danger
                     )
                 }
             }
@@ -936,19 +938,19 @@ private struct ToggleRow: View {
     
     private var statusColor: Color {
         if toggle.isBlocked {
-            return IDKTheme.warning
+            return XLTheme.warning
         }
-        return isOn ? IDKTheme.accent : IDKTheme.silverDark.opacity(0.45)
+        return isOn ? XLTheme.accent : Color.white.opacity(0.35)
     }
     
     private var rowStroke: AnyShapeStyle {
         if toggle.isBlocked {
-            return AnyShapeStyle(IDKTheme.warning.opacity(0.5))
+            return AnyShapeStyle(XLTheme.warning.opacity(0.5))
         }
         if isOn {
-            return AnyShapeStyle(IDKTheme.accent.opacity(0.55))
+            return AnyShapeStyle(XLTheme.accent.opacity(0.55))
         }
-        return AnyShapeStyle(IDKTheme.silverStroke)
+        return AnyShapeStyle(XLTheme.edgeStroke)
     }
     
     var body: some View {
@@ -956,7 +958,7 @@ private struct ToggleRow: View {
             RoundedRectangle(cornerRadius: 2)
                 .fill(statusColor)
                 .frame(width: 3)
-                .shadow(color: isOn ? IDKTheme.accent.opacity(0.6) : .clear, radius: 4)
+                .shadow(color: isOn ? XLTheme.accent.opacity(0.6) : .clear, radius: 4)
                 .padding(.vertical, 12)
                 .padding(.leading, 6)
             
@@ -966,59 +968,59 @@ private struct ToggleRow: View {
                         .fill(
                             LinearGradient(
                                 colors: toggle.isBlocked
-                                    ? [IDKTheme.warning.opacity(0.22), IDKTheme.warning.opacity(0.08)]
+                                    ? [XLTheme.warning.opacity(0.22), XLTheme.warning.opacity(0.08)]
                                     : (isOn
-                                        ? [IDKTheme.accent.opacity(0.25), IDKTheme.accent.opacity(0.08)]
-                                        : [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.55)]),
+                                        ? [XLTheme.accent.opacity(0.25), XLTheme.accent.opacity(0.08)]
+                                        : [Color.white.opacity(0.20), Color.white.opacity(0.06)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
+                                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
                         )
                         .frame(width: 38, height: 38)
                     
                     if isProcessing {
                         ProgressView()
-                            .tint(IDKTheme.ink.opacity(0.6))
+                            .tint(XLTheme.ink.opacity(0.6))
                             .scaleEffect(0.7)
                     } else if toggle.isBlocked {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(IDKTheme.warning)
+                            .foregroundStyle(XLTheme.warning)
                     } else {
                         Image(systemName: toggle.icon)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(isOn ? IDKTheme.accent : IDKTheme.ink.opacity(0.75))
+                            .foregroundStyle(isOn ? XLTheme.accent : XLTheme.ink.opacity(0.75))
                     }
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(toggle.displayName)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(toggle.isBlocked ? IDKTheme.inkFaint : IDKTheme.ink)
-                        .shadow(color: Color.white.opacity(0.9), radius: 3)
+                        .foregroundStyle(toggle.isBlocked ? XLTheme.inkFaint : XLTheme.ink)
+                        .shadow(color: Color.black.opacity(0.85), radius: 3)
                         .lineLimit(1)
                     
                     HStack(spacing: 5) {
                         Text(toggle.category.rawValue.uppercased())
                             .font(.system(size: 8, weight: .bold))
                             .tracking(0.5)
-                            .foregroundStyle(IDKTheme.inkSoft)
+                            .foregroundStyle(XLTheme.inkSoft)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(
                                 Capsule()
-                                    .fill(Color.white.opacity(0.55))
-                                    .overlay(Capsule().stroke(IDKTheme.silverMid.opacity(0.8), lineWidth: 0.5))
+                                    .fill(Color.black.opacity(0.35))
+                                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 0.5))
                             )
                         
                         if toggle.isBlocked {
                             Text("En mantenimiento")
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(IDKTheme.warning)
+                                .foregroundStyle(XLTheme.warning)
                         }
                     }
                 }
@@ -1030,16 +1032,16 @@ private struct ToggleRow: View {
                     set: { onToggle($0) }
                 ))
                 .labelsHidden()
-                .tint(IDKTheme.accent)
+                .tint(XLTheme.accent)
                 .scaleEffect(0.85)
                 .disabled(isProcessing || toggle.isBlocked)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
         }
-        .idkGlass(
+        .xlGlass(
             radius: 16,
-            tint: isOn ? IDKTheme.accent.opacity(0.07) : Color.white.opacity(0.08),
+            tint: isOn ? XLTheme.accent.opacity(0.12) : Color.black.opacity(0.30),
             stroke: rowStroke,
             material: false
         )
@@ -1069,16 +1071,16 @@ private struct ToastView: View {
                 .foregroundStyle(message.color)
             Text(message.message)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(IDKTheme.ink)
+                .foregroundStyle(XLTheme.ink)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(
             Capsule()
-                .fill(.regularMaterial)
-                .overlay(Capsule().fill(Color.white.opacity(0.45)))
+                .fill(.regularMaterial).environment(\.colorScheme, .dark)
+                .overlay(Capsule().fill(Color.black.opacity(0.45)))
         )
-        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
-        .shadow(color: IDKTheme.silverDark.opacity(0.35), radius: 14, y: 6)
+        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.35), radius: 14, y: 6)
     }
 }
