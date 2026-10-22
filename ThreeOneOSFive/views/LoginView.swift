@@ -1,25 +1,29 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Tema visual (plata / hielo, combina con el fondo)
+// MARK: - Tema visual XL3 (oscuro + amarillo paja + rojo, combina con el fondo)
 
-private enum IDKTheme {
+private enum XLTheme {
     /// Nombre del asset de la imagen de fondo (Assets.xcassets)
-    static let backgroundImageName = "IDKBackground"
+    static let backgroundImageName = "XLBackground"
 
-    static let ink = Color(red: 0.09, green: 0.11, blue: 0.17)
-    static let inkSoft = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.55)
-    static let inkFaint = Color(red: 0.09, green: 0.11, blue: 0.17).opacity(0.35)
+    // Texto claro sobre cristal oscuro
+    static let ink = Color.white
+    static let inkSoft = Color.white.opacity(0.62)
+    static let inkFaint = Color.white.opacity(0.38)
 
-    static let silverLight = Color.white
-    static let silverMid = Color(red: 0.80, green: 0.83, blue: 0.88)
-    static let silverDark = Color(red: 0.55, green: 0.60, blue: 0.68)
+    /// Amarillo del sombrero de paja
+    static let accent = Color(red: 0.97, green: 0.78, blue: 0.20)
+    /// Rojo de la banda del sombrero
+    static let accentRed = Color(red: 0.86, green: 0.17, blue: 0.20)
+    static let warning = Color(red: 1.00, green: 0.55, blue: 0.20)
+    static let ok = Color(red: 0.30, green: 0.80, blue: 0.42)
+    static let danger = Color(red: 1.00, green: 0.42, blue: 0.42)
 
-    static let accent = Color(red: 0.28, green: 0.52, blue: 0.86)
-
-    static var silverStroke: LinearGradient {
+    /// Borde del cristal: amarillo -> casi transparente -> rojo
+    static var edgeStroke: LinearGradient {
         LinearGradient(
-            colors: [silverLight.opacity(0.95), silverMid.opacity(0.55), silverLight.opacity(0.85)],
+            colors: [accent.opacity(0.65), Color.white.opacity(0.10), accentRed.opacity(0.55)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -28,17 +32,17 @@ private enum IDKTheme {
 
 // MARK: - Estilo "cristal" reutilizable
 
-private struct IDKGlass: ViewModifier {
+private struct XLGlass: ViewModifier {
     var radius: CGFloat = 16
-    var tint: Color = Color.white.opacity(0.30)
-    var strokeColor: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke)
+    var tint: Color = Color.black.opacity(0.35)
+    var strokeColor: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke)
     var strokeWidth: CGFloat = 1
 
     func body(content: Content) -> some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
                     .overlay(
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
                             .fill(tint)
@@ -48,16 +52,16 @@ private struct IDKGlass: ViewModifier {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(strokeColor, lineWidth: strokeWidth)
             )
-            .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 12, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
     }
 }
 
 private extension View {
-    func idkGlass(radius: CGFloat = 16,
-                  tint: Color = Color.white.opacity(0.30),
-                  stroke: AnyShapeStyle = AnyShapeStyle(IDKTheme.silverStroke),
+    func xlGlass(radius: CGFloat = 16,
+                  tint: Color = Color.black.opacity(0.35),
+                  stroke: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke),
                   strokeWidth: CGFloat = 1) -> some View {
-        modifier(IDKGlass(radius: radius, tint: tint, strokeColor: stroke, strokeWidth: strokeWidth))
+        modifier(XLGlass(radius: radius, tint: tint, strokeColor: stroke, strokeWidth: strokeWidth))
     }
 }
 
@@ -87,8 +91,8 @@ struct LoginView: View {
                         topBadge
                         
                         // Empuja el formulario hacia abajo para dejar ver
-                        // al ángel y el logo de la imagen de fondo
-                        Spacer(minLength: 200)
+                        // el sombrero y el texto de la imagen de fondo
+                        Spacer(minLength: 220)
                         
                         loginPanel
                         
@@ -120,13 +124,13 @@ struct LoginView: View {
     private var background: some View {
         ZStack {
             // Color base por si la imagen no carga
-            Color(red: 0.88, green: 0.90, blue: 0.94)
+            Color.black
                 .ignoresSafeArea()
             
             // Imagen a pantalla completa, sin deformarse
             Color.clear
                 .overlay(
-                    Image(IDKTheme.backgroundImageName)
+                    Image(XLTheme.backgroundImageName)
                         .resizable()
                         .scaledToFill()
                 )
@@ -136,9 +140,9 @@ struct LoginView: View {
             // Velo suave abajo para que el formulario se lea bien
             LinearGradient(
                 stops: [
-                    .init(color: Color.white.opacity(0.0), location: 0.0),
-                    .init(color: Color.white.opacity(0.08), location: 0.5),
-                    .init(color: Color.white.opacity(0.35), location: 1.0)
+                    .init(color: Color.black.opacity(0.10), location: 0.0),
+                    .init(color: Color.black.opacity(0.15), location: 0.5),
+                    .init(color: Color.black.opacity(0.55), location: 1.0)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
@@ -152,23 +156,23 @@ struct LoginView: View {
     private var topBadge: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(Color(red: 0.2, green: 0.6, blue: 0.2))
+                .fill(XLTheme.ok)
                 .frame(width: 6, height: 6)
-                .shadow(color: Color(red: 0.2, green: 0.6, blue: 0.2).opacity(0.6), radius: 4)
+                .shadow(color: XLTheme.ok.opacity(0.6), radius: 4)
             Text("SISTEMA ACTIVO")
                 .font(.system(size: 10, weight: .bold))
                 .tracking(2)
-                .foregroundStyle(IDKTheme.ink.opacity(0.8))
+                .foregroundStyle(XLTheme.ink.opacity(0.8))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
         .background(
             Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(Color.white.opacity(0.30)))
+                .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                .overlay(Capsule().fill(Color.black.opacity(0.35)))
         )
-        .overlay(Capsule().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
-        .shadow(color: IDKTheme.silverDark.opacity(0.25), radius: 8, y: 4)
+        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.25), radius: 8, y: 4)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
     }
@@ -194,7 +198,7 @@ struct LoginView: View {
         .padding(.horizontal, 18)
         .padding(.top, 22)
         .padding(.bottom, 20)
-        .idkGlass(radius: 28, tint: Color.white.opacity(0.38))
+        .xlGlass(radius: 28, tint: Color.black.opacity(0.50))
         .padding(.horizontal, 20)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 24)
@@ -210,7 +214,7 @@ struct LoginView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color.white.opacity(glowAnimation ? 0.95 : 0.6),
+                                XLTheme.accent.opacity(glowAnimation ? 0.45 : 0.20),
                                 Color.clear
                             ],
                             center: .center,
@@ -224,11 +228,11 @@ struct LoginView: View {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                Color.white.opacity(0),
-                                Color.white.opacity(0.95),
-                                Color.white.opacity(0),
-                                IDKTheme.silverMid.opacity(0.9),
-                                Color.white.opacity(0)
+                                Color.clear,
+                                XLTheme.accent.opacity(0.95),
+                                Color.clear,
+                                XLTheme.accentRed.opacity(0.9),
+                                Color.clear
                             ],
                             center: .center
                         ),
@@ -238,9 +242,9 @@ struct LoginView: View {
                     .rotationEffect(.degrees(rotationAngle))
                 
                 Circle()
-                    .strokeBorder(IDKTheme.silverStroke, lineWidth: 2.5)
+                    .strokeBorder(XLTheme.edgeStroke, lineWidth: 2.5)
                     .frame(width: 66, height: 66)
-                    .shadow(color: Color.white.opacity(0.9), radius: glowAnimation ? 14 : 6)
+                    .shadow(color: XLTheme.accent.opacity(0.7), radius: glowAnimation ? 14 : 6)
                 
                 Image("Logo")
                     .resizable()
@@ -255,22 +259,22 @@ struct LoginView: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [.clear, IDKTheme.ink.opacity(0.4), .clear],
+                            colors: [.clear, XLTheme.ink.opacity(0.4), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(width: 36, height: 1)
                 
-                Text("IDK EXTERNAL")
+                Text("XL3 IOS NEW")
                     .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .tracking(4)
-                    .foregroundStyle(IDKTheme.ink.opacity(0.8))
+                    .tracking(3)
+                    .foregroundStyle(XLTheme.ink.opacity(0.8))
                 
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [.clear, IDKTheme.ink.opacity(0.4), .clear],
+                            colors: [.clear, XLTheme.ink.opacity(0.4), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -288,32 +292,32 @@ struct LoginView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.95), IDKTheme.silverMid.opacity(0.7)],
+                            colors: [Color.white.opacity(0.20), Color.white.opacity(0.06)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .overlay(Circle().strokeBorder(IDKTheme.silverStroke, lineWidth: 1))
+                    .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
                     .frame(width: 40, height: 40)
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(IDKTheme.accent)
+                    .foregroundStyle(XLTheme.accent)
             }
             
             VStack(alignment: .leading, spacing: 3) {
                 Text("Acceso restringido")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(IDKTheme.ink)
+                    .foregroundStyle(XLTheme.ink)
                 Text("Introduce tu clave para continuar")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(IDKTheme.inkSoft)
+                    .foregroundStyle(XLTheme.inkSoft)
             }
             
             Spacer()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .idkGlass(radius: 16, tint: Color.white.opacity(0.25))
+        .xlGlass(radius: 16, tint: Color.black.opacity(0.25))
     }
     
     // MARK: - Password Field
@@ -321,12 +325,12 @@ struct LoginView: View {
     private var passwordField: some View {
         HStack(spacing: 12) {
             Image(systemName: "key.fill")
-                .foregroundStyle(IDKTheme.ink.opacity(0.7))
+                .foregroundStyle(XLTheme.ink.opacity(0.7))
                 .font(.system(size: 15))
             
-            SecureField("Introduce tu clave...", text: $password)
+            SecureField("Introduce tu clave...", text: $password, prompt: Text("Introduce tu clave...").foregroundColor(XLTheme.inkFaint))
                 .textFieldStyle(.plain)
-                .foregroundStyle(IDKTheme.ink)
+                .foregroundStyle(XLTheme.ink)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .submitLabel(.go)
@@ -338,19 +342,19 @@ struct LoginView: View {
                     password = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(IDKTheme.inkFaint)
+                        .foregroundStyle(XLTheme.inkFaint)
                         .font(.system(size: 14))
                 }
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .idkGlass(
+        .xlGlass(
             radius: 16,
-            tint: Color.white.opacity(0.55),
+            tint: Color.black.opacity(0.40),
             stroke: showError
                 ? AnyShapeStyle(Color.red.opacity(0.6))
-                : AnyShapeStyle(IDKTheme.silverStroke),
+                : AnyShapeStyle(XLTheme.edgeStroke),
             strokeWidth: showError ? 1.5 : 1
         )
         .offset(x: shakeOffset)
@@ -384,8 +388,8 @@ struct LoginView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.16, green: 0.20, blue: 0.30),
-                                Color(red: 0.09, green: 0.11, blue: 0.17)
+                                Color(red: 0.90, green: 0.20, blue: 0.22),
+                                Color(red: 0.62, green: 0.08, blue: 0.12)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -402,7 +406,7 @@ struct LoginView: View {
                                 lineWidth: 1
                             )
                     )
-                    .shadow(color: IDKTheme.accent.opacity(0.35), radius: 14, y: 6)
+                    .shadow(color: XLTheme.accentRed.opacity(0.55), radius: 14, y: 6)
             )
         }
         .disabled(password.isEmpty || isVerifying)
@@ -420,12 +424,12 @@ struct LoginView: View {
             Text(errorMessage)
                 .font(.system(size: 12, weight: .semibold))
         }
-        .foregroundStyle(Color(red: 0.78, green: 0.25, blue: 0.25))
+        .foregroundStyle(XLTheme.danger)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.65))
+                .fill(Color.black.opacity(0.55))
                 .overlay(Capsule().stroke(Color.red.opacity(0.25), lineWidth: 1))
         )
         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -435,9 +439,9 @@ struct LoginView: View {
     
     private var statusIndicators: some View {
         HStack(spacing: 20) {
-            statusDot(color: supabase.isConnected ? Color(red: 0.2, green: 0.6, blue: 0.2) : .gray, label: "Online")
-            statusDot(color: IDKTheme.accent.opacity(0.8), label: "v2.0")
-            statusDot(color: IDKTheme.silverDark, label: "Beta")
+            statusDot(color: supabase.isConnected ? XLTheme.ok : .gray, label: "Online")
+            statusDot(color: XLTheme.accent.opacity(0.8), label: "v2.0")
+            statusDot(color: Color.white.opacity(0.45), label: "Beta")
         }
     }
     
@@ -449,7 +453,7 @@ struct LoginView: View {
                 .shadow(color: color.opacity(0.6), radius: 3)
             Text(label)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(IDKTheme.inkSoft)
+                .foregroundStyle(XLTheme.inkSoft)
         }
     }
     
@@ -459,12 +463,12 @@ struct LoginView: View {
         HStack(spacing: 6) {
             Image(systemName: "hammer.fill")
                 .font(.system(size: 9))
-                .foregroundStyle(IDKTheme.inkSoft)
+                .foregroundStyle(XLTheme.inkSoft)
             Text("Hecho por didierxitx7")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(IDKTheme.inkSoft)
+                .foregroundStyle(XLTheme.inkSoft)
         }
-        .shadow(color: Color.white.opacity(0.9), radius: 4)
+        .shadow(color: Color.black.opacity(0.85), radius: 4)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.6).delay(0.5), value: appeared)
     }
