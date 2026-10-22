@@ -1,72 +1,4 @@
 import SwiftUI
-import UIKit
-
-// MARK: - Tema visual XL3 (oscuro + amarillo paja + rojo, combina con el fondo)
-
-private enum XLTheme {
-    /// Nombre del asset de la imagen de fondo (Assets.xcassets)
-    static let backgroundImageName = "XLBackground"
-
-    // Texto claro sobre cristal oscuro
-    static let ink = Color.white
-    static let inkSoft = Color.white.opacity(0.62)
-    static let inkFaint = Color.white.opacity(0.38)
-
-    /// Amarillo del sombrero de paja
-    static let accent = Color(red: 0.97, green: 0.78, blue: 0.20)
-    /// Rojo de la banda del sombrero
-    static let accentRed = Color(red: 0.86, green: 0.17, blue: 0.20)
-    static let warning = Color(red: 1.00, green: 0.55, blue: 0.20)
-    static let ok = Color(red: 0.30, green: 0.80, blue: 0.42)
-    static let danger = Color(red: 1.00, green: 0.42, blue: 0.42)
-
-    /// Borde del cristal: amarillo -> casi transparente -> rojo
-    static var edgeStroke: LinearGradient {
-        LinearGradient(
-            colors: [accent.opacity(0.65), Color.white.opacity(0.10), accentRed.opacity(0.55)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-}
-
-// MARK: - Estilo "cristal" reutilizable
-
-private struct XLGlass: ViewModifier {
-    var radius: CGFloat = 16
-    var tint: Color = Color.black.opacity(0.35)
-    var strokeColor: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke)
-    /// false = sin desenfoque, deja ver la foto de fondo con nitidez
-    var useMaterial: Bool = true
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                ZStack {
-                    if useMaterial {
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                    }
-                    RoundedRectangle(cornerRadius: radius, style: .continuous)
-                        .fill(tint)
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
-    }
-}
-
-private extension View {
-    func xlGlass(radius: CGFloat = 16,
-                  tint: Color = Color.black.opacity(0.35),
-                  stroke: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke),
-                  material: Bool = true) -> some View {
-        modifier(XLGlass(radius: radius, tint: tint, strokeColor: stroke, useMaterial: material))
-    }
-}
 
 // MARK: - Modelo de toggle
 
@@ -77,6 +9,7 @@ struct PatchToggle: Identifiable {
     let icon: String
     let category: PatchCategory
     
+    // Campos dinámicos
     var isDynamic: Bool = false
     var isBlocked: Bool = false
     var blockMessage: String? = nil
@@ -107,10 +40,25 @@ enum PatchCategory: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    var iconName: String {
+    /// Nombre que se muestra en la interfaz
+    var title: String {
         switch self {
-        case .aimbot: return "scope"
-        case .hologramas: return "cube.transparent"
+        case .aimbot: return "Patches"
+        case .hologramas: return "Visuals"
+        }
+    }
+    
+    var subtitle: String {
+        switch self {
+        case .aimbot: return "Gameplay controls"
+        case .hologramas: return "Visual options"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .aimbot: return "slider.horizontal.3"
+        case .hologramas: return "sparkles"
         }
     }
 }
@@ -119,7 +67,113 @@ enum PatchCategory: String, CaseIterable, Identifiable {
 
 enum PatchRegistry {
     static func toggles(for mode: FFMode) -> [PatchToggle] {
-        return []
+        switch mode {
+        case .normal:
+            return [
+                PatchToggle(
+                    id: "aimbot-cabeza-sin-antena",
+                    displayName: "Aimbot cabeza (Sin Antena)",
+                    patchFilename: "AIMBOT CABEZA SIN ANTENA",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-pecho-sin-antena",
+                    displayName: "Aimbot pecho (Sin Antena)",
+                    patchFilename: "AIMBOT PECHO SIN ANTENA",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-cuello-sin-antena",
+                    displayName: "Aimbot cuello (Sin Antena)",
+                    patchFilename: "CUELLO SIN ANTENA",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-drag-avatar",
+                    displayName: "Aimbot drag (Avatar)",
+                    patchFilename: "Avatar_Aimdrag",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-balas-magicas",
+                    displayName: "Balas mágicas (Sin Antena)",
+                    patchFilename: "AVATAR BALAS MAGICAS SIN ANTENA",
+                    icon: "sparkles",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "holograma-basico",
+                    displayName: "Básico",
+                    patchFilename: "BASICO FF NORMAL",
+                    icon: "cube.transparent",
+                    category: .hologramas
+                ),
+                PatchToggle(
+                    id: "holograma-rtx",
+                    displayName: "RTX",
+                    patchFilename: "RTX FF NORMAL",
+                    icon: "cube.transparent",
+                    category: .hologramas
+                ),
+                PatchToggle(
+                    id: "holograma-pj-amarillo",
+                    displayName: "PJ Amarillo",
+                    patchFilename: "PJ FF NORMAL AMARILLO",
+                    icon: "person.fill",
+                    category: .hologramas
+                ),
+            ]
+            
+        case .max:
+            return [
+                PatchToggle(
+                    id: "aimbot-cabeza-sin-antena-max",
+                    displayName: "Aimbot cabeza (Sin Antena)",
+                    patchFilename: "CABEZA FF MAX SIN ANTENA",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-cuello-sin-antena-max",
+                    displayName: "Aimbot cuello (Sin Antena)",
+                    patchFilename: "CUELLO SIN ANTENA FF MAX",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "aimbot-drag-sin-antena-max",
+                    displayName: "Aimbot drag (Sin Antena)",
+                    patchFilename: "DRAG FF MAX SIN ANTENA",
+                    icon: "scope",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "balas-magicas-max",
+                    displayName: "Bala mágica",
+                    patchFilename: "BALA MAGICA FF MAX",
+                    icon: "sparkles",
+                    category: .aimbot
+                ),
+                PatchToggle(
+                    id: "holograma-rtx-max",
+                    displayName: "RTX",
+                    patchFilename: "RTX FF MAX",
+                    icon: "cube.transparent",
+                    category: .hologramas
+                ),
+                PatchToggle(
+                    id: "holograma-pj-max",
+                    displayName: "PJ",
+                    patchFilename: "PJ FF MAX",
+                    icon: "person.fill",
+                    category: .hologramas
+                ),
+            ]
+        }
     }
 }
 
@@ -138,7 +192,6 @@ struct ControlPanelView: View {
     @State private var showSettings = false
     @State private var alert: PatchStoreAlert? = nil
     @State private var showLogoutConfirmation = false
-    @State private var appeared = false
     
     private var mode: FFMode { session.selectedMode ?? .normal }
     
@@ -150,6 +203,18 @@ struct ControlPanelView: View {
     
     private var toggles: [PatchToggle] {
         allToggles.filter { $0.category == selectedCategory }
+    }
+    
+    private var activeCount: Int {
+        toggles.filter { activeToggles.contains($0.id) }.count
+    }
+    
+    private var keyStatus: AngelKeyStatus {
+        AngelKeyStatus.make(
+            hasKey: supabase.currentKey != nil,
+            isBanned: supabase.currentKey?.isBanned ?? false,
+            expiresAt: supabase.currentKey?.expiresAt
+        )
     }
     
     private func buildDynamicToggles(for mode: FFMode) -> [PatchToggle] {
@@ -185,45 +250,38 @@ struct ControlPanelView: View {
         }
     }
     
+    // MARK: - Body
+    
     var body: some View {
         ZStack {
-            background
+            AngelBackground()
             
-            VStack(spacing: 0) {
-                header
-                    .padding(.top, 8)
-                
-                if !announcementsStore.visibleBanners.isEmpty {
-                    AnnouncementBannersContainer(
-                        announcements: announcementsStore.visibleBanners,
-                        onDismiss: { id in
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                announcementsStore.dismiss(id)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    AngelHeader(subtitle: "PATCH LIBRARY", online: true)
+                        .padding(.top, 8)
+                    
+                    // Banners de anuncios (solo tipo banner)
+                    if !announcementsStore.visibleBanners.isEmpty {
+                        AnnouncementBannersContainer(
+                            announcements: announcementsStore.visibleBanners,
+                            onDismiss: { id in
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    announcementsStore.dismiss(id)
+                                }
                             }
-                        }
-                    )
-                    .padding(.top, 8)
-                }
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 18) {
-                        // Espacio para dejar ver el sombrero de la imagen de fondo
-                        Color.clear.frame(height: 170)
-                        
-                        profileBanner
-                        
-                        statusChips
-                        
-                        categoryTabs
-                        
-                        patchesList
-                        
-                        footer
+                        )
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    
+                    welcomeCard
+                    patchesCard
+                    accessCard
+                    
+                    AngelSignature()
+                        .padding(.top, 8)
+                        .padding(.bottom, 30)
                 }
+                .padding(.horizontal, 20)
             }
             
             if let toast {
@@ -258,366 +316,11 @@ struct ControlPanelView: View {
             Text("Si cierras sesión deberás ingresar tu key de nuevo.")
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.5)) {
-                appeared = true
-            }
             syncToggleStates()
             Task {
                 await loadDynamicPatchesIfNeeded()
             }
         }
-    }
-    
-    // MARK: - Background (imagen fija de fondo)
-    
-    private var background: some View {
-        ZStack {
-            // Color base por si la imagen no carga
-            Color.black
-                .ignoresSafeArea()
-            
-            // Imagen a pantalla completa, sin deformarse
-            Color.clear
-                .overlay(
-                    Image(XLTheme.backgroundImageName)
-                        .resizable()
-                        .scaledToFill()
-                )
-                .clipped()
-                .ignoresSafeArea()
-            
-            // Velo suave abajo para que el texto siempre se lea bien
-            LinearGradient(
-                stops: [
-                    .init(color: Color.black.opacity(0.10), location: 0.0),
-                    .init(color: Color.black.opacity(0.15), location: 0.45),
-                    .init(color: Color.black.opacity(0.55), location: 1.0)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
-    }
-    
-    // MARK: - Header
-    
-    private func glassCircleButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(XLTheme.ink.opacity(0.85))
-                .frame(width: 40, height: 40)
-                .background(
-                    Circle()
-                        .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                        .overlay(Circle().fill(Color.black.opacity(0.35)))
-                )
-                .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-                .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
-        }
-    }
-    
-    private var header: some View {
-        VStack(spacing: 10) {
-            HStack {
-                // Botón atrás (izquierda)
-                glassCircleButton(systemName: "chevron.left") {
-                    withAnimation {
-                        session.selectedMode = nil
-                        activeToggles.removeAll()
-                    }
-                }
-                
-                Spacer()
-                
-                // Logo centrado
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [XLTheme.accent.opacity(0.35), Color.clear],
-                                center: .center,
-                                startRadius: 8,
-                                endRadius: 40
-                            )
-                        )
-                        .frame(width: 70, height: 70)
-                    
-                    Circle()
-                        .strokeBorder(XLTheme.edgeStroke, lineWidth: 2)
-                        .frame(width: 54, height: 54)
-                        .shadow(color: XLTheme.accent.opacity(0.7), radius: 10)
-                    
-                    Image("Logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.15), radius: 3)
-                }
-                
-                Spacer()
-                
-                // Botón logout (derecha)
-                glassCircleButton(systemName: "rectangle.portrait.and.arrow.right") {
-                    showLogoutConfirmation = true
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            // Nombre y subtítulo centrados
-            VStack(spacing: 2) {
-                Text("XL3 IOS NEW")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundStyle(XLTheme.ink.opacity(0.75))
-                    .tracking(3)
-                
-                Text("Panel de control")
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundStyle(XLTheme.ink)
-            }
-            .shadow(color: Color.black.opacity(0.85), radius: 6)
-        }
-    }
-    
-    // MARK: - Profile Banner
-    
-    private var profileBanner: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.20), Color.white.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-                    .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-                
-                Image(systemName: "person.fill")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(XLTheme.ink.opacity(0.75))
-            }
-            
-            VStack(alignment: .leading, spacing: 3) {
-                Text(supabase.currentKey?.keyValue ?? "SIN KEY")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(XLTheme.ink)
-                    .lineLimit(1)
-                
-                Text(supabase.currentKey?.label ?? "Usuario")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(XLTheme.inkSoft)
-                    .lineLimit(1)
-            }
-            
-            Spacer()
-            
-            Text(daysRemainingText)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(keyStatusColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.black.opacity(0.35))
-                        .overlay(
-                            Capsule()
-                                .fill(keyStatusColor.opacity(0.12))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(keyStatusColor.opacity(0.45), lineWidth: 1)
-                        )
-                )
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .xlGlass(radius: 18)
-        .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 10)
-        .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
-    }
-    
-    // MARK: - Status Chips (iOS + Modelo)
-    
-    private var statusChips: some View {
-        HStack(spacing: 8) {
-            // Chip de modo FF
-            chipView(
-                icon: "gamecontroller.fill",
-                text: mode.displayName,
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.accent
-            )
-            
-            // Chip de iOS
-            chipView(
-                icon: "applelogo",
-                text: "iOS \(UIDevice.current.systemVersion)",
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.inkSoft
-            )
-            
-            // Chip de modelo
-            chipView(
-                icon: "iphone",
-                text: deviceModelIdentifier,
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.inkSoft
-            )
-            
-            Spacer()
-        }
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.4).delay(0.2), value: appeared)
-    }
-    
-    private func chipView(icon: String, text: String, color: Color, iconColor: Color) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(iconColor)
-            Text(text)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(color)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                .overlay(Capsule().fill(Color.black.opacity(0.35)))
-        )
-        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-    }
-    
-    /// Identificador del modelo real (ej: iPhone12,1)
-    private var deviceModelIdentifier: String {
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        let machineMirror = Mirror(reflecting: systemInfo.machine)
-        let identifier = machineMirror.children.reduce("") { identifier, element in
-            guard let value = element.value as? Int8, value != 0 else { return identifier }
-            return identifier + String(UnicodeScalar(UInt8(value)))
-        }
-        return identifier
-    }
-    
-    // MARK: - Category Tabs
-    
-    private var categoryTabs: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(PatchCategory.allCases) { category in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            selectedCategory = category
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: category.iconName)
-                                .font(.system(size: 12, weight: .semibold))
-                            Text(category.rawValue)
-                                .font(.system(size: 13, weight: .bold))
-                        }
-                        .foregroundStyle(
-                            selectedCategory == category
-                                ? XLTheme.ink
-                                : XLTheme.inkFaint
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                }
-            }
-            
-            GeometryReader { geo in
-                let width = geo.size.width / CGFloat(PatchCategory.allCases.count)
-                let index = PatchCategory.allCases.firstIndex(of: selectedCategory) ?? 0
-                
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                XLTheme.accent,
-                                XLTheme.accent.opacity(0.4)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: width * 0.5, height: 3)
-                    .shadow(color: XLTheme.accent.opacity(0.5), radius: 4)
-                    .offset(x: width * CGFloat(index) + (width * 0.25))
-                    .animation(.easeInOut(duration: 0.25), value: selectedCategory)
-            }
-            .frame(height: 3)
-            .padding(.bottom, 2)
-        }
-        .xlGlass(radius: 16)
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
-    }
-    
-    // MARK: - Patches List
-    
-    private var patchesList: some View {
-        VStack(spacing: 10) {
-            if toggles.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "tray")
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundStyle(XLTheme.inkFaint)
-                    Text("No hay parches disponibles")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(XLTheme.inkSoft)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 36)
-                .xlGlass(radius: 16)
-            } else {
-                ForEach(toggles) { toggle in
-                    ToggleRow(
-                        toggle: toggle,
-                        isOn: activeToggles.contains(toggle.id),
-                        isProcessing: processingToggles.contains(toggle.id),
-                        onToggle: { newValue in
-                            handleToggle(toggle, isOn: newValue)
-                        }
-                    )
-                }
-            }
-        }
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.4).delay(0.4), value: appeared)
-    }
-    
-    // MARK: - Footer
-    
-    private var footer: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 9))
-                .foregroundStyle(XLTheme.inkSoft)
-            Text("XL3 IOS NEW v2.0")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(XLTheme.inkSoft)
-            Text("·")
-                .font(.system(size: 10))
-                .foregroundStyle(XLTheme.inkFaint)
-            Text("Hecho por didierxitx7")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(XLTheme.inkSoft)
-        }
-        .shadow(color: Color.black.opacity(0.85), radius: 4)
-        .padding(.top, 20)
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
     }
     
     // MARK: - Cargar parches dinámicos
@@ -634,90 +337,221 @@ struct ControlPanelView: View {
         }
     }
     
-    // MARK: - Key Helpers
+    // MARK: - Tarjeta "Listen now"
     
-    private var daysRemainingText: String {
-        guard let key = supabase.currentKey else { return "—" }
-        
-        if key.isBanned {
-            return "Baneada"
-        }
-        
-        guard let expiresAt = key.expiresAt,
-              let date = parseSupabaseDate(expiresAt) else {
-            return "Sin expiración"
-        }
-        
-        let now = Date()
-        let diff = date.timeIntervalSince(now)
-        
-        if diff <= 0 {
-            return "Expirada"
-        }
-        
-        let totalMinutes = Int(diff / 60)
-        let totalHours = totalMinutes / 60
-        let days = totalHours / 24
-        let minutes = totalMinutes % 60
-        
-        if days > 1 {
-            return "\(days) días"
-        }
-        if days == 1 {
-            return "1 día"
-        }
-        if totalHours >= 1 {
-            return "\(totalHours)h \(minutes)m"
-        }
-        return "\(minutes)m"
-    }
-    
-    private func parseSupabaseDate(_ string: String) -> Date? {
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = iso.date(from: string) { return date }
-        
-        iso.formatOptions = [.withInternetDateTime]
-        if let date = iso.date(from: string) { return date }
-        
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSZ"
-        df.locale = Locale(identifier: "en_US_POSIX")
-        df.timeZone = TimeZone(secondsFromGMT: 0)
-        if let date = df.date(from: string) { return date }
-        
-        df.dateFormat = "yyyy-MM-dd HH:mm:ssZ"
-        if let date = df.date(from: string) { return date }
-        
-        let fixed = string.replacingOccurrences(of: " ", with: "T")
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = iso.date(from: fixed) { return date }
-        
-        return nil
-    }
-    
-    private var keyStatusColor: Color {
-        guard let key = supabase.currentKey else { return XLTheme.inkSoft }
-        
-        if key.isBanned {
-            return XLTheme.danger
-        }
-        
-        if let expiresAt = key.expiresAt,
-           let date = parseSupabaseDate(expiresAt) {
-            let days = Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0
-            if days < 0 {
-                return XLTheme.danger
+    private var welcomeCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text("Listen now")
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundStyle(.white)
+                
+                Spacer()
+                
+                // Cambiar de versión (antes era el botón de atrás)
+                Button {
+                    withAnimation {
+                        session.selectedMode = nil
+                        activeToggles.removeAll()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .heavy))
+                        Text(mode.displayName)
+                            .font(.system(size: 11, weight: .heavy))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(AngelTheme.accent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule().fill(AngelTheme.accent.opacity(0.14))
+                    )
+                }
+                .buttonStyle(.plain)
             }
-            if days <= 3 {
-                return XLTheme.warning
+            
+            HStack(spacing: 18) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(AngelTheme.accentGradient)
+                        .frame(width: 118, height: 118)
+                        .shadow(color: AngelTheme.accent.opacity(0.3), radius: 16, y: 6)
+                    
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 40, weight: .semibold))
+                        .foregroundStyle(.black.opacity(0.8))
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Your Patch Library")
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Text("\(allToggles.count) modules ready to review")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AngelTheme.secondary)
+                    
+                    Text(keyStatus.title)
+                        .font(.system(size: 12, weight: .heavy))
+                        .foregroundStyle(keyStatus.color)
+                }
+                
+                Spacer(minLength: 0)
             }
         }
-        
-        return XLTheme.ok
+        .padding(20)
+        .angelCard()
     }
     
-    // MARK: - Lógica de toggle (SIN CAMBIOS)
+    // MARK: - Tarjeta Patches / Visuals
+    
+    private var patchesCard: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(selectedCategory.title)
+                        .font(.system(size: 28, weight: .heavy))
+                        .foregroundStyle(.white)
+                    Text(selectedCategory.subtitle)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AngelTheme.secondary)
+                }
+                
+                Spacer()
+                
+                Text("\(activeCount)/\(toggles.count) ACTIVE")
+                    .font(.system(size: 12, weight: .heavy))
+                    .foregroundStyle(AngelTheme.accent)
+                    .padding(.top, 6)
+            }
+            
+            categoryPicker
+            
+            if toggles.isEmpty {
+                Text("No hay opciones disponibles")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AngelTheme.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+            } else {
+                VStack(spacing: 4) {
+                    ForEach(toggles) { toggle in
+                        ToggleRow(
+                            toggle: toggle,
+                            isOn: activeToggles.contains(toggle.id),
+                            isProcessing: processingToggles.contains(toggle.id),
+                            onToggle: { newValue in
+                                handleToggle(toggle, isOn: newValue)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .angelCard()
+    }
+    
+    // MARK: - Selector de categoría
+    
+    private var categoryPicker: some View {
+        HStack(spacing: 10) {
+            ForEach(PatchCategory.allCases) { category in
+                let selected = selectedCategory == category
+                
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedCategory = category
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: category.icon)
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(category.title)
+                            .font(.system(size: 16, weight: .bold))
+                    }
+                    .foregroundStyle(selected ? Color.black : Color.white.opacity(0.55))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        Capsule()
+                            .fill(
+                                selected
+                                    ? AnyShapeStyle(AngelTheme.accentGradient)
+                                    : AnyShapeStyle(Color.white.opacity(0.07))
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    // MARK: - Tarjeta de acceso
+    
+    private var accessCard: some View {
+        let status = keyStatus
+        
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: status.icon)
+                    .font(.system(size: 16, weight: .bold))
+                Text(status.title)
+                    .font(.system(size: 16, weight: .heavy))
+            }
+            .foregroundStyle(status.color)
+            
+            Text(status.detail)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true)
+            
+            HStack(spacing: 12) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Remember key")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(supabase.currentKey?.keyValue ?? "SIN KEY")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(AngelTheme.secondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Apagarlo = quitar la key (pide confirmación)
+                Toggle("", isOn: Binding(
+                    get: { true },
+                    set: { newValue in
+                        if !newValue { showLogoutConfirmation = true }
+                    }
+                ))
+                .labelsHidden()
+                .tint(AngelTheme.accent)
+                
+                Button {
+                    showLogoutConfirmation = true
+                } label: {
+                    Text("Remove key")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(AngelTheme.danger)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .angelCard(tint: status.color.opacity(0.35))
+    }
+    
+    // MARK: - Lógica de toggle
     
     private func handleToggle(_ toggle: PatchToggle, isOn: Bool) {
         guard !processingToggles.contains(toggle.id) else { return }
@@ -762,7 +596,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche no encontrado: \(toggle.fullFilename)",
                             icon: "exclamationmark.triangle.fill",
-                            color: XLTheme.danger
+                            color: AngelTheme.danger
                         )
                     }
                     return
@@ -787,7 +621,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche activado con éxito",
                         icon: "checkmark.circle.fill",
-                        color: XLTheme.ok
+                        color: AngelTheme.accent
                     )
                 }
             } catch let error as PatchPackageError {
@@ -796,7 +630,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error: \(error.localizationKey)",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: AngelTheme.danger
                     )
                 }
             } catch {
@@ -805,7 +639,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al activar el parche",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: AngelTheme.danger
                     )
                 }
             }
@@ -824,7 +658,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche desactivado",
                             icon: "xmark.circle.fill",
-                            color: .white.opacity(0.75)
+                            color: .white.opacity(0.7)
                         )
                     }
                     return
@@ -837,7 +671,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche desactivado",
                             icon: "xmark.circle.fill",
-                            color: .white.opacity(0.75)
+                            color: .white.opacity(0.7)
                         )
                     }
                     return
@@ -852,7 +686,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche desactivado",
                         icon: "xmark.circle.fill",
-                        color: .white.opacity(0.75)
+                        color: .white.opacity(0.7)
                     )
                 }
             } catch {
@@ -861,7 +695,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al desactivar",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: AngelTheme.danger
                     )
                 }
             }
@@ -936,116 +770,101 @@ private struct ToggleRow: View {
     let isProcessing: Bool
     let onToggle: (Bool) -> Void
     
-    private var statusColor: Color {
-        if toggle.isBlocked {
-            return XLTheme.warning
-        }
-        return isOn ? XLTheme.accent : Color.white.opacity(0.35)
+    private var tint: Color {
+        if toggle.isBlocked { return AngelTheme.warn }
+        let palette: [Color] = [
+            AngelTheme.accent,
+            Color(red: 0.55, green: 0.60, blue: 1.00),
+            Color(red: 1.00, green: 0.42, blue: 0.45),
+            Color(red: 0.35, green: 0.80, blue: 0.75)
+        ]
+        let sum = toggle.id.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return palette[sum % palette.count]
     }
     
-    private var rowStroke: AnyShapeStyle {
-        if toggle.isBlocked {
-            return AnyShapeStyle(XLTheme.warning.opacity(0.5))
+    /// "Aimbot cabeza (Sin Antena)" -> título "Aimbot cabeza", subtítulo "Sin Antena"
+    private var parts: (title: String, subtitle: String) {
+        let name = toggle.displayName
+        if let open = name.firstIndex(of: "("),
+           let close = name.lastIndex(of: ")"),
+           open < close {
+            let title = name[..<open].trimmingCharacters(in: .whitespaces)
+            let sub = String(name[name.index(after: open)..<close])
+            if !title.isEmpty {
+                return (title, sub)
+            }
         }
-        if isOn {
-            return AnyShapeStyle(XLTheme.accent.opacity(0.55))
-        }
-        return AnyShapeStyle(XLTheme.edgeStroke)
+        return (name, toggle.category == .aimbot ? "Gameplay control" : "Visual option")
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(statusColor)
-                .frame(width: 3)
-                .shadow(color: isOn ? XLTheme.accent.opacity(0.6) : .clear, radius: 4)
-                .padding(.vertical, 12)
-                .padding(.leading, 6)
-            
-            HStack(spacing: 12) {
+        Button {
+            onToggle(!isOn)
+        } label: {
+            HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: toggle.isBlocked
-                                    ? [XLTheme.warning.opacity(0.22), XLTheme.warning.opacity(0.08)]
-                                    : (isOn
-                                        ? [XLTheme.accent.opacity(0.25), XLTheme.accent.opacity(0.08)]
-                                        : [Color.white.opacity(0.20), Color.white.opacity(0.06)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-                        )
-                        .frame(width: 38, height: 38)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(tint.opacity(0.16))
+                        .frame(width: 52, height: 52)
                     
                     if isProcessing {
                         ProgressView()
-                            .tint(XLTheme.ink.opacity(0.6))
-                            .scaleEffect(0.7)
-                    } else if toggle.isBlocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(XLTheme.warning)
+                            .tint(.white)
                     } else {
-                        Image(systemName: toggle.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(isOn ? XLTheme.accent : XLTheme.ink.opacity(0.75))
+                        Image(systemName: toggle.isBlocked ? "lock.fill" : toggle.icon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(tint)
                     }
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(toggle.displayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(toggle.isBlocked ? XLTheme.inkFaint : XLTheme.ink)
-                        .shadow(color: Color.black.opacity(0.85), radius: 3)
+                    Text(parts.title.uppercased())
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(toggle.isBlocked ? .white.opacity(0.5) : .white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     
-                    HStack(spacing: 5) {
-                        Text(toggle.category.rawValue.uppercased())
-                            .font(.system(size: 8, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(XLTheme.inkSoft)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.35))
-                                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 0.5))
-                            )
-                        
-                        if toggle.isBlocked {
-                            Text("En mantenimiento")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(XLTheme.warning)
-                        }
-                    }
+                    Text(toggle.isBlocked ? "En mantenimiento" : parts.subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(
+                            toggle.isBlocked
+                                ? AngelTheme.warn.opacity(0.85)
+                                : AngelTheme.secondary
+                        )
+                        .lineLimit(1)
                 }
                 
-                Spacer()
+                Spacer(minLength: 8)
                 
-                Toggle("", isOn: Binding(
-                    get: { isOn },
-                    set: { onToggle($0) }
-                ))
-                .labelsHidden()
-                .tint(XLTheme.accent)
-                .scaleEffect(0.85)
-                .disabled(isProcessing || toggle.isBlocked)
+                Text(toggle.isBlocked ? "LOCK" : (isOn ? "ON" : "OFF"))
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(
+                        toggle.isBlocked
+                            ? AngelTheme.warn
+                            : (isOn ? Color.black : Color.white.opacity(0.55))
+                    )
+                    .frame(minWidth: 44)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule().fill(
+                            toggle.isBlocked
+                                ? AnyShapeStyle(AngelTheme.warn.opacity(0.15))
+                                : (isOn
+                                    ? AnyShapeStyle(AngelTheme.accentGradient)
+                                    : AnyShapeStyle(Color.white.opacity(0.09)))
+                        )
+                    )
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.3))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
-        .xlGlass(
-            radius: 16,
-            tint: isOn ? XLTheme.accent.opacity(0.12) : Color.black.opacity(0.30),
-            stroke: rowStroke,
-            material: false
-        )
-        .animation(.easeInOut(duration: 0.2), value: isOn)
+        .buttonStyle(.plain)
+        .disabled(isProcessing)
     }
 }
 
@@ -1071,16 +890,18 @@ private struct ToastView: View {
                 .foregroundStyle(message.color)
             Text(message.message)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(XLTheme.ink)
+                .foregroundStyle(.white)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(
             Capsule()
-                .fill(.regularMaterial).environment(\.colorScheme, .dark)
-                .overlay(Capsule().fill(Color.black.opacity(0.45)))
+                .fill(AngelTheme.card.opacity(0.97))
+                .overlay(
+                    Capsule()
+                        .stroke(AngelTheme.accent.opacity(0.35), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
         )
-        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.35), radius: 14, y: 6)
     }
 }
