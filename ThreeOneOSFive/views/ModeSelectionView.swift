@@ -237,6 +237,9 @@ struct ScaleButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
+// MARK: - Tema Angel External (integrado)
+
 // MARK: - Tema Angel External
 // Acento: ámbar/dorado cálido (sale del tono sepia de la imagen y de la llama del encendedor)
 

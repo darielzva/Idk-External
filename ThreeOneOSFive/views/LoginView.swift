@@ -312,8 +312,6 @@ struct LoginView: View {
             errorMessage = "Este dispositivo fue baneado permanentemente"
         case .networkError:
             errorMessage = "Error de conexión"
-        case .invalidURL, .noData, .decodingFailed:
-            errorMessage = "Error del servidor"
         default:
             errorMessage = "Error del servidor"
         }
