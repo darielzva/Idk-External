@@ -271,8 +271,7 @@ struct LoginView: View {
                 await MainActor.run {
                     isVerifying = false
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        // Guardar sesión (persiste al cerrar la app)
-                        session.saveSession(keyValue: key.keyValue)
+                        session.isAuthenticated = true
                     }
                 }
                 
@@ -311,11 +310,11 @@ struct LoginView: View {
             errorMessage = "Límite de dispositivos alcanzado"
         case .deviceBanned:
             errorMessage = "Este dispositivo fue baneado permanentemente"
-        case .deviceSuspended:
-            errorMessage = "Tu dispositivo está suspendido temporalmente"
         case .networkError:
             errorMessage = "Error de conexión"
         case .invalidURL, .noData, .decodingFailed:
+            errorMessage = "Error del servidor"
+        default:
             errorMessage = "Error del servidor"
         }
         
