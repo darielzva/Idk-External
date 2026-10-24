@@ -1,73 +1,6 @@
 import SwiftUI
 import UIKit
 
-// MARK: - Tema visual XL3 (oscuro + amarillo paja + rojo, combina con el fondo)
-
-private enum XLTheme {
-    /// Nombre del asset de la imagen de fondo (Assets.xcassets)
-    static let backgroundImageName = "XLBackground"
-
-    // Texto claro sobre cristal oscuro
-    static let ink = Color.white
-    static let inkSoft = Color.white.opacity(0.62)
-    static let inkFaint = Color.white.opacity(0.38)
-
-    /// Amarillo del sombrero de paja
-    static let accent = Color(red: 0.97, green: 0.78, blue: 0.20)
-    /// Rojo de la banda del sombrero
-    static let accentRed = Color(red: 0.86, green: 0.17, blue: 0.20)
-    static let warning = Color(red: 1.00, green: 0.55, blue: 0.20)
-    static let ok = Color(red: 0.30, green: 0.80, blue: 0.42)
-    static let danger = Color(red: 1.00, green: 0.42, blue: 0.42)
-
-    /// Borde del cristal: amarillo -> casi transparente -> rojo
-    static var edgeStroke: LinearGradient {
-        LinearGradient(
-            colors: [accent.opacity(0.65), Color.white.opacity(0.10), accentRed.opacity(0.55)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-}
-
-// MARK: - Estilo "cristal" reutilizable
-
-private struct XLGlass: ViewModifier {
-    var radius: CGFloat = 16
-    var tint: Color = Color.black.opacity(0.35)
-    var strokeColor: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke)
-    /// false = sin desenfoque, deja ver la foto de fondo con nitidez
-    var useMaterial: Bool = true
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                ZStack {
-                    if useMaterial {
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                    }
-                    RoundedRectangle(cornerRadius: radius, style: .continuous)
-                        .fill(tint)
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
-    }
-}
-
-private extension View {
-    func xlGlass(radius: CGFloat = 16,
-                  tint: Color = Color.black.opacity(0.35),
-                  stroke: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke),
-                  material: Bool = true) -> some View {
-        modifier(XLGlass(radius: radius, tint: tint, strokeColor: stroke, useMaterial: material))
-    }
-}
-
 // MARK: - Modelo de toggle
 
 struct PatchToggle: Identifiable {
@@ -187,12 +120,12 @@ struct ControlPanelView: View {
     
     var body: some View {
         ZStack {
-            background
-            
+            SIBackground(imageTop: 186, imageWidthRatio: 0.70)
+
             VStack(spacing: 0) {
                 header
                     .padding(.top, 8)
-                
+
                 if !announcementsStore.visibleBanners.isEmpty {
                     AnnouncementBannersContainer(
                         announcements: announcementsStore.visibleBanners,
@@ -204,20 +137,20 @@ struct ControlPanelView: View {
                     )
                     .padding(.top, 8)
                 }
-                
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 18) {
-                        // Espacio para dejar ver el sombrero de la imagen de fondo
-                        Color.clear.frame(height: 170)
-                        
+                    VStack(spacing: 14) {
+                        // Espacio para dejar ver la imagen de fondo
+                        Color.clear.frame(height: 272)
+
                         profileBanner
-                        
-                        statusChips
-                        
+
+                        statusStrip
+
                         categoryTabs
-                        
+
                         patchesList
-                        
+
                         footer
                     }
                     .padding(.horizontal, 20)
@@ -225,7 +158,7 @@ struct ControlPanelView: View {
                     .padding(.bottom, 40)
                 }
             }
-            
+
             if let toast {
                 VStack {
                     Spacer()
@@ -267,235 +200,166 @@ struct ControlPanelView: View {
             }
         }
     }
-    
-    // MARK: - Background (imagen fija de fondo)
-    
-    private var background: some View {
-        ZStack {
-            // Color base por si la imagen no carga
-            Color.black
-                .ignoresSafeArea()
-            
-            // Imagen a pantalla completa, sin deformarse
-            Color.clear
-                .overlay(
-                    Image(XLTheme.backgroundImageName)
-                        .resizable()
-                        .scaledToFill()
-                )
-                .clipped()
-                .ignoresSafeArea()
-            
-            // Velo suave abajo para que el texto siempre se lea bien
-            LinearGradient(
-                stops: [
-                    .init(color: Color.black.opacity(0.10), location: 0.0),
-                    .init(color: Color.black.opacity(0.15), location: 0.45),
-                    .init(color: Color.black.opacity(0.55), location: 1.0)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
-    }
-    
+
     // MARK: - Header
-    
-    private func glassCircleButton(systemName: String, action: @escaping () -> Void) -> some View {
+
+    private func circleButton(systemName: String, tint: Color = SITheme.ink, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(XLTheme.ink.opacity(0.85))
+                .foregroundColor(tint)
                 .frame(width: 40, height: 40)
-                .background(
-                    Circle()
-                        .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                        .overlay(Circle().fill(Color.black.opacity(0.35)))
-                )
-                .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-                .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
+                .background(Circle().fill(SITheme.card.opacity(0.92)))
+                .overlay(Circle().strokeBorder(SITheme.edgeStroke, lineWidth: 1))
         }
     }
-    
+
     private var header: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             HStack {
                 // Botón atrás (izquierda)
-                glassCircleButton(systemName: "chevron.left") {
+                circleButton(systemName: "chevron.left") {
                     withAnimation {
                         session.selectedMode = nil
                         activeToggles.removeAll()
                     }
                 }
-                
+
                 Spacer()
-                
-                // Logo centrado
+
+                // Logo principal (centro)
                 ZStack {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [XLTheme.accent.opacity(0.35), Color.clear],
+                                colors: [SITheme.accent.opacity(0.35), Color.clear],
                                 center: .center,
-                                startRadius: 8,
-                                endRadius: 40
+                                startRadius: 10,
+                                endRadius: 46
                             )
                         )
-                        .frame(width: 70, height: 70)
-                    
+                        .frame(width: 84, height: 84)
+
+                    SILogo(size: 56)
+
                     Circle()
-                        .strokeBorder(XLTheme.edgeStroke, lineWidth: 2)
-                        .frame(width: 54, height: 54)
-                        .shadow(color: XLTheme.accent.opacity(0.7), radius: 10)
-                    
-                    Image("Logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.15), radius: 3)
+                        .strokeBorder(SITheme.ringStroke, lineWidth: 2)
+                        .frame(width: 62, height: 62)
+                        .shadow(color: SITheme.accent.opacity(0.6), radius: 8)
                 }
-                
+
                 Spacer()
-                
+
                 // Botón logout (derecha)
-                glassCircleButton(systemName: "rectangle.portrait.and.arrow.right") {
+                circleButton(systemName: "rectangle.portrait.and.arrow.right", tint: SITheme.accentRed) {
                     showLogoutConfirmation = true
                 }
             }
             .padding(.horizontal, 20)
-            
-            // Nombre y subtítulo centrados
+
             VStack(spacing: 2) {
-                Text("XL3 IOS NEW")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundStyle(XLTheme.ink.opacity(0.75))
-                    .tracking(3)
-                
+                Text(SITheme.appName)
+                    .font(.system(size: 13, weight: .heavy))
+                    .tracking(2.5)
+                    .foregroundColor(SITheme.accent)
+
                 Text("Panel de control")
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundStyle(XLTheme.ink)
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundColor(SITheme.ink)
             }
-            .shadow(color: Color.black.opacity(0.85), radius: 6)
         }
     }
-    
+
     // MARK: - Profile Banner
-    
+
     private var profileBanner: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.20), Color.white.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(SITheme.accent.opacity(0.14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(SITheme.accent.opacity(0.45), lineWidth: 1)
                     )
                     .frame(width: 42, height: 42)
-                    .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-                
+
                 Image(systemName: "person.fill")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(XLTheme.ink.opacity(0.75))
+                    .foregroundColor(SITheme.accent)
             }
-            
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(supabase.currentKey?.keyValue ?? "SIN KEY")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(XLTheme.ink)
+                    .foregroundColor(SITheme.ink)
                     .lineLimit(1)
-                
+
                 Text(supabase.currentKey?.label ?? "Usuario")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(XLTheme.inkSoft)
+                    .foregroundColor(SITheme.inkSoft)
                     .lineLimit(1)
             }
-            
+
             Spacer()
-            
+
             Text(daysRemainingText)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(keyStatusColor)
+                .foregroundColor(keyStatusColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(Color.black.opacity(0.35))
+                        .fill(keyStatusColor.opacity(0.14))
                         .overlay(
                             Capsule()
-                                .fill(keyStatusColor.opacity(0.12))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(keyStatusColor.opacity(0.45), lineWidth: 1)
+                                .stroke(keyStatusColor.opacity(0.5), lineWidth: 1)
                         )
                 )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .xlGlass(radius: 18)
+        .siCard(radius: 14)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 10)
         .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
     }
-    
-    // MARK: - Status Chips (iOS + Modelo)
-    
-    private var statusChips: some View {
-        HStack(spacing: 8) {
-            // Chip de modo FF
-            chipView(
-                icon: "gamecontroller.fill",
-                text: mode.displayName,
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.accent
-            )
-            
-            // Chip de iOS
-            chipView(
-                icon: "applelogo",
-                text: "iOS \(UIDevice.current.systemVersion)",
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.inkSoft
-            )
-            
-            // Chip de modelo
-            chipView(
-                icon: "iphone",
-                text: deviceModelIdentifier,
-                color: XLTheme.ink.opacity(0.8),
-                iconColor: XLTheme.inkSoft
-            )
-            
-            Spacer()
+
+    // MARK: - Status Strip (modo + iOS + modelo en una sola tarjeta)
+
+    private var statusStrip: some View {
+        HStack(spacing: 0) {
+            stripItem(icon: "gamecontroller.fill", text: mode.displayName, tint: SITheme.accent)
+            stripDivider
+            stripItem(icon: "applelogo", text: "iOS \(UIDevice.current.systemVersion)", tint: SITheme.inkSoft)
+            stripDivider
+            stripItem(icon: "iphone", text: deviceModelIdentifier, tint: SITheme.inkSoft)
         }
+        .padding(.vertical, 11)
+        .siCard(radius: 14, tab: false)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.2), value: appeared)
     }
-    
-    private func chipView(icon: String, text: String, color: Color, iconColor: Color) -> some View {
+
+    private func stripItem(icon: String, text: String, tint: Color) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(iconColor)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(tint)
             Text(text)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(color)
+                .foregroundColor(SITheme.ink.opacity(0.85))
                 .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
-                .overlay(Capsule().fill(Color.black.opacity(0.35)))
-        )
-        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+        .frame(maxWidth: .infinity)
     }
-    
+
+    private var stripDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.12))
+            .frame(width: 1, height: 16)
+    }
+
     /// Identificador del modelo real (ej: iPhone12,1)
     private var deviceModelIdentifier: String {
         var systemInfo = utsname()
@@ -507,79 +371,77 @@ struct ControlPanelView: View {
         }
         return identifier
     }
-    
-    // MARK: - Category Tabs
-    
+
+    // MARK: - Category Tabs (selector tipo píldora)
+
     private var categoryTabs: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(PatchCategory.allCases) { category in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            selectedCategory = category
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: category.iconName)
-                                .font(.system(size: 12, weight: .semibold))
-                            Text(category.rawValue)
-                                .font(.system(size: 13, weight: .bold))
-                        }
-                        .foregroundStyle(
-                            selectedCategory == category
-                                ? XLTheme.ink
-                                : XLTheme.inkFaint
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+        HStack(spacing: 6) {
+            ForEach(PatchCategory.allCases) { category in
+                let selected = selectedCategory == category
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        selectedCategory = category
                     }
-                }
-            }
-            
-            GeometryReader { geo in
-                let width = geo.size.width / CGFloat(PatchCategory.allCases.count)
-                let index = PatchCategory.allCases.firstIndex(of: selectedCategory) ?? 0
-                
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                XLTheme.accent,
-                                XLTheme.accent.opacity(0.4)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: category.iconName)
+                            .font(.system(size: 12, weight: .bold))
+                        Text(category.rawValue)
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundColor(selected ? Color.black.opacity(0.88) : SITheme.inkSoft)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule().fill(
+                            selected
+                                ? AnyShapeStyle(SITheme.accentGradient)
+                                : AnyShapeStyle(Color.clear)
                         )
                     )
-                    .frame(width: width * 0.5, height: 3)
-                    .shadow(color: XLTheme.accent.opacity(0.5), radius: 4)
-                    .offset(x: width * CGFloat(index) + (width * 0.25))
-                    .animation(.easeInOut(duration: 0.25), value: selectedCategory)
+                }
             }
-            .frame(height: 3)
-            .padding(.bottom, 2)
         }
-        .xlGlass(radius: 16)
+        .padding(4)
+        .background(Capsule().fill(SITheme.card.opacity(0.92)))
+        .overlay(Capsule().strokeBorder(SITheme.edgeStroke, lineWidth: 1))
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
     }
-    
+
     // MARK: - Patches List
-    
+
+    private var activeInCategory: Int {
+        toggles.filter { activeToggles.contains($0.id) }.count
+    }
+
     private var patchesList: some View {
         VStack(spacing: 10) {
+            HStack {
+                Text(selectedCategory.rawValue.uppercased())
+                    .font(.system(size: 11, weight: .heavy))
+                    .tracking(2)
+                    .foregroundColor(SITheme.inkSoft)
+                Spacer()
+                Text("\(activeInCategory)/\(toggles.count) ACTIVOS")
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1)
+                    .foregroundColor(activeInCategory > 0 ? SITheme.accent : SITheme.inkFaint)
+            }
+            .padding(.horizontal, 4)
+
             if toggles.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "tray")
                         .font(.system(size: 32, weight: .light))
-                        .foregroundStyle(XLTheme.inkFaint)
+                        .foregroundColor(SITheme.inkFaint)
                     Text("No hay parches disponibles")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(XLTheme.inkSoft)
+                        .foregroundColor(SITheme.inkSoft)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 36)
-                .xlGlass(radius: 16)
+                .siCard(radius: 14, tab: false)
             } else {
                 ForEach(toggles) { toggle in
                     ToggleRow(
@@ -596,30 +458,32 @@ struct ControlPanelView: View {
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.4), value: appeared)
     }
-    
+
     // MARK: - Footer
-    
+
     private var footer: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 9))
-                .foregroundStyle(XLTheme.inkSoft)
-            Text("XL3 IOS NEW v2.0")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(XLTheme.inkSoft)
-            Text("·")
-                .font(.system(size: 10))
-                .foregroundStyle(XLTheme.inkFaint)
-            Text("Hecho por didierxitx7")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(XLTheme.inkSoft)
+        VStack(spacing: 8) {
+            Rectangle()
+                .fill(SITheme.edgeStroke)
+                .frame(width: 70, height: 1)
+
+            HStack(spacing: 6) {
+                Text("\(SITheme.appName) v2.0")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(SITheme.inkSoft)
+                Text("·")
+                    .font(.system(size: 10))
+                    .foregroundColor(SITheme.inkFaint)
+                Text("Hecho por didierxitx7")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(SITheme.inkSoft)
+            }
         }
-        .shadow(color: Color.black.opacity(0.85), radius: 4)
-        .padding(.top, 20)
+        .padding(.top, 18)
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
     }
-    
+
     // MARK: - Cargar parches dinámicos
     
     private func loadDynamicPatchesIfNeeded() async {
@@ -697,24 +561,24 @@ struct ControlPanelView: View {
     }
     
     private var keyStatusColor: Color {
-        guard let key = supabase.currentKey else { return XLTheme.inkSoft }
+        guard let key = supabase.currentKey else { return SITheme.inkSoft }
         
         if key.isBanned {
-            return XLTheme.danger
+            return SITheme.danger
         }
         
         if let expiresAt = key.expiresAt,
            let date = parseSupabaseDate(expiresAt) {
             let days = Calendar.current.dateComponents([.day], from: Date(), to: date).day ?? 0
             if days < 0 {
-                return XLTheme.danger
+                return SITheme.danger
             }
             if days <= 3 {
-                return XLTheme.warning
+                return SITheme.warning
             }
         }
         
-        return XLTheme.ok
+        return SITheme.ok
     }
     
     // MARK: - Lógica de toggle (SIN CAMBIOS)
@@ -762,7 +626,7 @@ struct ControlPanelView: View {
                         showToast(
                             "Parche no encontrado: \(toggle.fullFilename)",
                             icon: "exclamationmark.triangle.fill",
-                            color: XLTheme.danger
+                            color: SITheme.danger
                         )
                     }
                     return
@@ -787,7 +651,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Parche activado con éxito",
                         icon: "checkmark.circle.fill",
-                        color: XLTheme.ok
+                        color: SITheme.ok
                     )
                 }
             } catch let error as PatchPackageError {
@@ -796,7 +660,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error: \(error.localizationKey)",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: SITheme.danger
                     )
                 }
             } catch {
@@ -805,7 +669,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al activar el parche",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: SITheme.danger
                     )
                 }
             }
@@ -861,7 +725,7 @@ struct ControlPanelView: View {
                     showToast(
                         "Error al desactivar",
                         icon: "exclamationmark.triangle.fill",
-                        color: XLTheme.danger
+                        color: SITheme.danger
                     )
                 }
             }
@@ -935,115 +799,103 @@ private struct ToggleRow: View {
     let isOn: Bool
     let isProcessing: Bool
     let onToggle: (Bool) -> Void
-    
-    private var statusColor: Color {
+
+    private var tileColors: [Color] {
         if toggle.isBlocked {
-            return XLTheme.warning
-        }
-        return isOn ? XLTheme.accent : Color.white.opacity(0.35)
-    }
-    
-    private var rowStroke: AnyShapeStyle {
-        if toggle.isBlocked {
-            return AnyShapeStyle(XLTheme.warning.opacity(0.5))
+            return [SITheme.warning.opacity(0.28), SITheme.warning.opacity(0.10)]
         }
         if isOn {
-            return AnyShapeStyle(XLTheme.accent.opacity(0.55))
+            return [SITheme.accent.opacity(0.35), SITheme.accentDeep.opacity(0.18)]
         }
-        return AnyShapeStyle(XLTheme.edgeStroke)
+        return [Color.white.opacity(0.10), Color.white.opacity(0.04)]
     }
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(statusColor)
-                .frame(width: 3)
-                .shadow(color: isOn ? XLTheme.accent.opacity(0.6) : .clear, radius: 4)
-                .padding(.vertical, 12)
-                .padding(.leading, 6)
-            
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: toggle.isBlocked
-                                    ? [XLTheme.warning.opacity(0.22), XLTheme.warning.opacity(0.08)]
-                                    : (isOn
-                                        ? [XLTheme.accent.opacity(0.25), XLTheme.accent.opacity(0.08)]
-                                        : [Color.white.opacity(0.20), Color.white.opacity(0.06)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-                        )
-                        .frame(width: 38, height: 38)
-                    
-                    if isProcessing {
-                        ProgressView()
-                            .tint(XLTheme.ink.opacity(0.6))
-                            .scaleEffect(0.7)
-                    } else if toggle.isBlocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(XLTheme.warning)
-                    } else {
-                        Image(systemName: toggle.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(isOn ? XLTheme.accent : XLTheme.ink.opacity(0.75))
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(toggle.displayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(toggle.isBlocked ? XLTheme.inkFaint : XLTheme.ink)
-                        .shadow(color: Color.black.opacity(0.85), radius: 3)
-                        .lineLimit(1)
-                    
-                    HStack(spacing: 5) {
-                        Text(toggle.category.rawValue.uppercased())
-                            .font(.system(size: 8, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundStyle(XLTheme.inkSoft)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.35))
-                                    .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 0.5))
-                            )
-                        
-                        if toggle.isBlocked {
-                            Text("En mantenimiento")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(XLTheme.warning)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                Toggle("", isOn: Binding(
-                    get: { isOn },
-                    set: { onToggle($0) }
-                ))
-                .labelsHidden()
-                .tint(XLTheme.accent)
-                .scaleEffect(0.85)
-                .disabled(isProcessing || toggle.isBlocked)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
+
+    private var rowStroke: AnyShapeStyle {
+        if toggle.isBlocked {
+            return AnyShapeStyle(SITheme.warning.opacity(0.5))
         }
-        .xlGlass(
-            radius: 16,
-            tint: isOn ? XLTheme.accent.opacity(0.12) : Color.black.opacity(0.30),
+        if isOn {
+            return AnyShapeStyle(SITheme.accent.opacity(0.65))
+        }
+        return AnyShapeStyle(SITheme.edgeStroke)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: tileColors,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .frame(width: 40, height: 40)
+
+                if isProcessing {
+                    ProgressView()
+                        .tint(SITheme.accent)
+                        .scaleEffect(0.75)
+                } else if toggle.isBlocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(SITheme.warning)
+                } else {
+                    Image(systemName: toggle.icon)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(isOn ? SITheme.accent : SITheme.ink.opacity(0.75))
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(toggle.displayName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(toggle.isBlocked ? SITheme.inkFaint : SITheme.ink)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Text(toggle.category.rawValue.uppercased())
+                        .font(.system(size: 8, weight: .heavy))
+                        .tracking(0.8)
+                        .foregroundColor(isOn ? SITheme.accent : SITheme.inkSoft)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color.white.opacity(0.07))
+                        )
+
+                    if toggle.isBlocked {
+                        Text("En mantenimiento")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(SITheme.warning)
+                    }
+                }
+            }
+
+            Spacer()
+
+            Toggle("", isOn: Binding(
+                get: { isOn },
+                set: { onToggle($0) }
+            ))
+            .labelsHidden()
+            .tint(SITheme.accent)
+            .scaleEffect(0.9)
+            .disabled(isProcessing || toggle.isBlocked)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .siCard(
+            radius: 12,
             stroke: rowStroke,
-            material: false
+            tint: isOn ? SITheme.accent.opacity(0.08) : Color.clear,
+            tab: false
         )
         .animation(.easeInOut(duration: 0.2), value: isOn)
     }
@@ -1055,7 +907,7 @@ struct ToastMessage: Equatable {
     let message: String
     let icon: String
     let color: Color
-    
+
     static func == (lhs: ToastMessage, rhs: ToastMessage) -> Bool {
         lhs.message == rhs.message
     }
@@ -1063,24 +915,190 @@ struct ToastMessage: Equatable {
 
 private struct ToastView: View {
     let message: ToastMessage
-    
+
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: message.icon)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(message.color)
+                .foregroundColor(message.color)
             Text(message.message)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(XLTheme.ink)
+                .foregroundColor(SITheme.ink)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(
-            Capsule()
-                .fill(.regularMaterial).environment(\.colorScheme, .dark)
-                .overlay(Capsule().fill(Color.black.opacity(0.45)))
+        .background(Capsule().fill(SITheme.card))
+        .overlay(Capsule().strokeBorder(SITheme.edgeStroke, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.5), radius: 14, y: 6)
+    }
+}
+
+// MARK: - ====== Tema New iOS x Señor iOS (compartido: lo usan Login, ModeSelection y Splash) ======
+
+enum SITheme {
+    /// Imagen roja "Señor iOS" (fondo, ya trae fondo negro)
+    static let backgroundImageName = "SIBackground"
+    /// Imagen verde (logo principal)
+    static let logoImageName = "SILogo"
+
+    static let appName = "NEW iOS x SEÑOR iOS"
+
+    static let ink = Color.white
+    static let inkSoft = Color.white.opacity(0.62)
+    static let inkFaint = Color.white.opacity(0.38)
+
+    /// Verde neón del logo
+    static let accent = Color(red: 0.16, green: 0.94, blue: 0.30)
+    static let accentDeep = Color(red: 0.04, green: 0.50, blue: 0.14)
+    /// Rojo del fondo
+    static let accentRed = Color(red: 0.90, green: 0.09, blue: 0.11)
+
+    static let warning = Color(red: 1.00, green: 0.62, blue: 0.20)
+    static let ok = Color(red: 0.30, green: 0.90, blue: 0.45)
+    static let danger = Color(red: 1.00, green: 0.36, blue: 0.36)
+
+    static let card = Color(red: 0.055, green: 0.060, blue: 0.060)
+
+    /// Borde: verde -> casi transparente -> rojo
+    static var edgeStroke: LinearGradient {
+        LinearGradient(
+            colors: [accent.opacity(0.55), Color.white.opacity(0.06), accentRed.opacity(0.50)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
-        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
-        .shadow(color: Color.black.opacity(0.35), radius: 14, y: 6)
+    }
+
+    /// Aro del logo: verde -> rojo
+    static var ringStroke: LinearGradient {
+        LinearGradient(
+            colors: [accent, accentRed],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    static var accentGradient: LinearGradient {
+        LinearGradient(
+            colors: [accent, accentDeep],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: - Fondo (imagen roja centrada sobre negro)
+
+struct SIBackground: View {
+    /// Distancia desde arriba de la pantalla hasta la imagen
+    var imageTop: CGFloat = 96
+    /// Ancho de la imagen respecto al ancho de la pantalla
+    var imageWidthRatio: CGFloat = 0.80
+
+    var body: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width * imageWidthRatio, 460)
+
+            ZStack(alignment: .top) {
+                Color.black
+
+                if UIImage(named: SITheme.backgroundImageName) != nil {
+                    Image(SITheme.backgroundImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: side, height: side)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, imageTop)
+                }
+
+                // Brillo verde suave abajo (une con el logo)
+                RadialGradient(
+                    colors: [SITheme.accent.opacity(0.10), Color.clear],
+                    center: .bottom,
+                    startRadius: 10,
+                    endRadius: 420
+                )
+
+                // Velo para que el contenido siempre se lea
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.black.opacity(0.0), location: 0.0),
+                        .init(color: Color.black.opacity(0.25), location: 0.55),
+                        .init(color: Color.black.opacity(0.70), location: 1.0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+// MARK: - Logo principal (imagen verde en círculo)
+
+struct SILogo: View {
+    var size: CGFloat = 56
+
+    var body: some View {
+        Group {
+            if UIImage(named: SITheme.logoImageName) != nil {
+                Image(SITheme.logoImageName)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                ZStack {
+                    Color.black
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: size * 0.42, weight: .bold))
+                        .foregroundColor(SITheme.accent)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+    }
+}
+
+// MARK: - Tarjeta (oscura, con pestaña verde arriba a la izquierda)
+
+struct SICard: ViewModifier {
+    var radius: CGFloat = 14
+    var stroke: AnyShapeStyle = AnyShapeStyle(SITheme.edgeStroke)
+    var tint: Color = Color.clear
+    var tab: Bool = true
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(SITheme.card.opacity(0.90))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .fill(tint)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(stroke, lineWidth: 1)
+            )
+            .overlay(alignment: .topLeading) {
+                if tab {
+                    Capsule()
+                        .fill(SITheme.accentGradient)
+                        .frame(width: 34, height: 3)
+                        .padding(.leading, 18)
+                        .offset(y: -1)
+                }
+            }
+    }
+}
+
+extension View {
+    func siCard(radius: CGFloat = 14,
+                stroke: AnyShapeStyle = AnyShapeStyle(SITheme.edgeStroke),
+                tint: Color = Color.clear,
+                tab: Bool = true) -> some View {
+        modifier(SICard(radius: radius, stroke: stroke, tint: tint, tab: tab))
     }
 }
