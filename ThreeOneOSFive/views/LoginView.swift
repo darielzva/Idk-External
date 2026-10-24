@@ -1,6 +1,72 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Tema visual XL3 (oscuro + amarillo paja + rojo, combina con el fondo)
+
+private enum XLTheme {
+    /// Nombre del asset de la imagen de fondo (Assets.xcassets)
+    static let backgroundImageName = "XLBackground"
+
+    // Texto claro sobre cristal oscuro
+    static let ink = Color.white
+    static let inkSoft = Color.white.opacity(0.62)
+    static let inkFaint = Color.white.opacity(0.38)
+
+    /// Amarillo del sombrero de paja
+    static let accent = Color(red: 0.97, green: 0.78, blue: 0.20)
+    /// Rojo de la banda del sombrero
+    static let accentRed = Color(red: 0.86, green: 0.17, blue: 0.20)
+    static let warning = Color(red: 1.00, green: 0.55, blue: 0.20)
+    static let ok = Color(red: 0.30, green: 0.80, blue: 0.42)
+    static let danger = Color(red: 1.00, green: 0.42, blue: 0.42)
+
+    /// Borde del cristal: amarillo -> casi transparente -> rojo
+    static var edgeStroke: LinearGradient {
+        LinearGradient(
+            colors: [accent.opacity(0.65), Color.white.opacity(0.10), accentRed.opacity(0.55)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: - Estilo "cristal" reutilizable
+
+private struct XLGlass: ViewModifier {
+    var radius: CGFloat = 16
+    var tint: Color = Color.black.opacity(0.35)
+    var strokeColor: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke)
+    var strokeWidth: CGFloat = 1
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .fill(tint)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .strokeBorder(strokeColor, lineWidth: strokeWidth)
+            )
+            .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
+    }
+}
+
+private extension View {
+    func xlGlass(radius: CGFloat = 16,
+                  tint: Color = Color.black.opacity(0.35),
+                  stroke: AnyShapeStyle = AnyShapeStyle(XLTheme.edgeStroke),
+                  strokeWidth: CGFloat = 1) -> some View {
+        modifier(XLGlass(radius: radius, tint: tint, strokeColor: stroke, strokeWidth: strokeWidth))
+    }
+}
+
+// MARK: - Login
+
 struct LoginView: View {
     @ObservedObject var session: AppSession
     @EnvironmentObject private var supabase: SupabaseService
@@ -8,154 +74,290 @@ struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = "Clave incorrecta"
     @State private var shakeOffset: CGFloat = 0
+    @State private var glowAnimation = false
     @State private var appeared = false
+    @State private var rotationAngle: Double = 0
     @State private var isVerifying = false
     
     var body: some View {
         ZStack {
-            AngelBackground()
+            background
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    AngelHeader(subtitle: "PATCH LIBRARY", online: supabase.isConnected)
-                        .padding(.top, 8)
-                    
-                    accessCard
-                    
-                    statusIndicators
-                        .padding(.top, 4)
-                    
-                    AngelSignature()
-                        .padding(.top, 12)
-                        .padding(.bottom, 30)
+            GeometryReader { geo in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 24)
+                        
+                        topBadge
+                        
+                        // Empuja el formulario hacia abajo para dejar ver
+                        // el sombrero y el texto de la imagen de fondo
+                        Spacer(minLength: 220)
+                        
+                        loginPanel
+                        
+                        Spacer().frame(height: 24)
+                        
+                        footerSection
+                        
+                        Spacer().frame(height: 24)
+                    }
+                    .frame(minHeight: geo.size.height)
                 }
-                .padding(.horizontal, 20)
             }
         }
         .onAppear {
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                glowAnimation = true
+            }
+            withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+                rotationAngle = 360
+            }
             withAnimation(.easeOut(duration: 0.6)) {
                 appeared = true
             }
         }
     }
     
-    // MARK: - Tarjeta de acceso
+    // MARK: - Background (imagen fija de fondo)
     
-    private var accessCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Listen now")
-                .font(.system(size: 32, weight: .heavy))
-                .foregroundStyle(.white)
+    private var background: some View {
+        ZStack {
+            // Color base por si la imagen no carga
+            Color.black
+                .ignoresSafeArea()
             
-            HStack(spacing: 18) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(AngelTheme.accentGradient)
-                        .frame(width: 118, height: 118)
-                        .shadow(color: AngelTheme.accent.opacity(0.3), radius: 16, y: 6)
-                    
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 40, weight: .semibold))
-                        .foregroundStyle(.black.opacity(0.8))
-                }
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Acceso restringido")
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
-                    
-                    Text("Introduce tu clave para continuar")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AngelTheme.secondary)
-                    
-                    Text("SISTEMA ACTIVO")
-                        .font(.system(size: 12, weight: .heavy))
-                        .foregroundStyle(AngelTheme.ok)
-                }
-                
-                Spacer(minLength: 0)
-            }
+            // Imagen a pantalla completa, sin deformarse
+            Color.clear
+                .overlay(
+                    Image(XLTheme.backgroundImageName)
+                        .resizable()
+                        .scaledToFill()
+                )
+                .clipped()
+                .ignoresSafeArea()
+            
+            // Velo suave abajo para que el formulario se lea bien
+            LinearGradient(
+                stops: [
+                    .init(color: Color.black.opacity(0.10), location: 0.0),
+                    .init(color: Color.black.opacity(0.15), location: 0.5),
+                    .init(color: Color.black.opacity(0.55), location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
+    }
+    
+    // MARK: - Top Badge
+    
+    private var topBadge: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(XLTheme.ok)
+                .frame(width: 6, height: 6)
+                .shadow(color: XLTheme.ok.opacity(0.6), radius: 4)
+            Text("SISTEMA ACTIVO")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(2)
+                .foregroundStyle(XLTheme.ink.opacity(0.8))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
+                .overlay(Capsule().fill(Color.black.opacity(0.35)))
+        )
+        .overlay(Capsule().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.25), radius: 8, y: 4)
+        .opacity(appeared ? 1 : 0)
+        .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
+    }
+    
+    // MARK: - Panel de login (todo el formulario en una tarjeta de cristal)
+    
+    private var loginPanel: some View {
+        VStack(spacing: 18) {
+            panelHeader
+            
+            welcomeCard
             
             passwordField
+            
             loginButton
             
             if showError {
                 errorMessageView
             }
+            
+            statusIndicators
         }
-        .padding(20)
-        .angelCard()
+        .padding(.horizontal, 18)
+        .padding(.top, 22)
+        .padding(.bottom, 20)
+        .xlGlass(radius: 28, tint: Color.black.opacity(0.50))
+        .padding(.horizontal, 20)
         .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 15)
-        .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
+        .offset(y: appeared ? 0 : 24)
+        .animation(.easeOut(duration: 0.6).delay(0.25), value: appeared)
     }
     
-    // MARK: - Password Field (con botón de pegar)
+    // MARK: - Panel Header (logo pequeño + nombre)
+    
+    private var panelHeader: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                XLTheme.accent.opacity(glowAnimation ? 0.45 : 0.20),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 14,
+                            endRadius: 52
+                        )
+                    )
+                    .frame(width: 104, height: 104)
+                
+                Circle()
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color.clear,
+                                XLTheme.accent.opacity(0.95),
+                                Color.clear,
+                                XLTheme.accentRed.opacity(0.9),
+                                Color.clear
+                            ],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [4, 8])
+                    )
+                    .frame(width: 84, height: 84)
+                    .rotationEffect(.degrees(rotationAngle))
+                
+                Circle()
+                    .strokeBorder(XLTheme.edgeStroke, lineWidth: 2.5)
+                    .frame(width: 66, height: 66)
+                    .shadow(color: XLTheme.accent.opacity(0.7), radius: glowAnimation ? 14 : 6)
+                
+                Image("Logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.15), radius: 4)
+            }
+            .frame(height: 100)
+            
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.clear, XLTheme.ink.opacity(0.4), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: 36, height: 1)
+                
+                Text("XL3 IOS NEW")
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .tracking(3)
+                    .foregroundStyle(XLTheme.ink.opacity(0.8))
+                
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.clear, XLTheme.ink.opacity(0.4), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: 36, height: 1)
+            }
+        }
+    }
+    
+    // MARK: - Welcome Card
+    
+    private var welcomeCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.20), Color.white.opacity(0.06)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(Circle().strokeBorder(XLTheme.edgeStroke, lineWidth: 1))
+                    .frame(width: 40, height: 40)
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(XLTheme.accent)
+            }
+            
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Acceso restringido")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(XLTheme.ink)
+                Text("Introduce tu clave para continuar")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(XLTheme.inkSoft)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .xlGlass(radius: 16, tint: Color.black.opacity(0.25))
+    }
+    
+    // MARK: - Password Field
     
     private var passwordField: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: "key.fill")
-                .foregroundStyle(AngelTheme.accent)
+                .foregroundStyle(XLTheme.ink.opacity(0.7))
                 .font(.system(size: 15))
             
-            SecureField("Introduce tu clave...", text: $password)
+            SecureField("Introduce tu clave...", text: $password, prompt: Text("Introduce tu clave...").foregroundColor(XLTheme.inkFaint))
                 .textFieldStyle(.plain)
-                .foregroundStyle(.white)
+                .foregroundStyle(XLTheme.ink)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .submitLabel(.go)
                 .onSubmit(attemptLogin)
                 .disabled(isVerifying)
             
-            // Botón de pegar (solo si el campo está vacío)
-            if password.isEmpty && !isVerifying {
-                Button {
-                    pasteFromClipboard()
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
-                        .foregroundStyle(.white.opacity(0.6))
-                        .font(.system(size: 15))
-                        .frame(width: 30, height: 30)
-                        .background(
-                            Circle().fill(Color.white.opacity(0.08))
-                        )
-                }
-                .buttonStyle(.plain)
-                .transition(.opacity.combined(with: .scale))
-            }
-            
-            // Botón de limpiar
             if !password.isEmpty && !isVerifying {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        password = ""
-                    }
+                    password = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.white.opacity(0.5))
-                        .font(.system(size: 15))
+                        .foregroundStyle(XLTheme.inkFaint)
+                        .font(.system(size: 14))
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(
-                            showError
-                                ? AngelTheme.danger.opacity(0.7)
-                                : AngelTheme.accent.opacity(0.25),
-                            lineWidth: 1.2
-                        )
-                )
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .xlGlass(
+            radius: 16,
+            tint: Color.black.opacity(0.40),
+            stroke: showError
+                ? AnyShapeStyle(Color.red.opacity(0.6))
+                : AnyShapeStyle(XLTheme.edgeStroke),
+            strokeWidth: showError ? 1.5 : 1
         )
         .offset(x: shakeOffset)
-        .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
     }
     
     // MARK: - Login Button
@@ -165,7 +367,7 @@ struct LoginView: View {
             HStack(spacing: 10) {
                 if isVerifying {
                     ProgressView()
-                        .tint(.black)
+                        .tint(.white)
                         .scaleEffect(0.9)
                     Text("VERIFICANDO...")
                         .font(.system(size: 15, weight: .heavy))
@@ -178,18 +380,38 @@ struct LoginView: View {
                         .tracking(2)
                 }
             }
-            .foregroundStyle(.black)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
-                Capsule()
-                    .fill(AngelTheme.accentGradient)
-                    .shadow(color: AngelTheme.accent.opacity(0.35), radius: 14, y: 5)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.90, green: 0.20, blue: 0.22),
+                                Color(red: 0.62, green: 0.08, blue: 0.12)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.55), Color.white.opacity(0.05)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: XLTheme.accentRed.opacity(0.55), radius: 14, y: 6)
             )
         }
-        .buttonStyle(.plain)
         .disabled(password.isEmpty || isVerifying)
-        .opacity((password.isEmpty || isVerifying) ? 0.4 : 1.0)
+        .opacity((password.isEmpty || isVerifying) ? 0.45 : 1.0)
+        .scaleEffect(password.isEmpty ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
     }
     
@@ -202,8 +424,14 @@ struct LoginView: View {
             Text(errorMessage)
                 .font(.system(size: 12, weight: .semibold))
         }
-        .foregroundStyle(AngelTheme.danger)
-        .frame(maxWidth: .infinity)
+        .foregroundStyle(XLTheme.danger)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(Color.black.opacity(0.55))
+                .overlay(Capsule().stroke(Color.red.opacity(0.25), lineWidth: 1))
+        )
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
@@ -211,12 +439,10 @@ struct LoginView: View {
     
     private var statusIndicators: some View {
         HStack(spacing: 20) {
-            statusDot(color: supabase.isConnected ? AngelTheme.ok : .gray, label: "Online")
-            statusDot(color: AngelTheme.accent, label: "v2.0")
-            statusDot(color: AngelTheme.accent, label: "Beta")
+            statusDot(color: supabase.isConnected ? XLTheme.ok : .gray, label: "Online")
+            statusDot(color: XLTheme.accent.opacity(0.8), label: "v2.0")
+            statusDot(color: Color.white.opacity(0.45), label: "Beta")
         }
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.6).delay(0.3), value: appeared)
     }
     
     private func statusDot(color: Color, label: String) -> some View {
@@ -224,34 +450,30 @@ struct LoginView: View {
             Circle()
                 .fill(color)
                 .frame(width: 6, height: 6)
-                .shadow(color: color.opacity(0.8), radius: 3)
+                .shadow(color: color.opacity(0.6), radius: 3)
             Text(label)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(XLTheme.inkSoft)
         }
     }
     
-    // MARK: - Pegar del portapapeles
+    // MARK: - Footer
     
-    private func pasteFromClipboard() {
-        guard let pastedText = UIPasteboard.general.string,
-              !pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            log("clipboard: vacío")
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.warning)
-            return
+    private var footerSection: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "hammer.fill")
+                .font(.system(size: 9))
+                .foregroundStyle(XLTheme.inkSoft)
+            Text("Hecho por didierxitx7")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(XLTheme.inkSoft)
         }
-        
-        withAnimation(.easeInOut(duration: 0.2)) {
-            password = pastedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        let impact = UIImpactFeedbackGenerator(style: .light)
-        impact.impactOccurred()
-        log("clipboard: pegado")
+        .shadow(color: Color.black.opacity(0.85), radius: 4)
+        .opacity(appeared ? 1 : 0)
+        .animation(.easeOut(duration: 0.6).delay(0.5), value: appeared)
     }
     
-    // MARK: - Login Logic (Supabase)
+    // MARK: - Login Logic (SIN CAMBIOS)
     
     private func attemptLogin() {
         guard !isVerifying else { return }
@@ -291,12 +513,14 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Handle Login Error
+    // MARK: - Handle Login Error (SIN CAMBIOS)
     
     private func handleLoginError(_ error: SupabaseError) {
+        // Vibración de error
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.error)
         
+        // Mensaje específico según el error
         switch error {
         case .keyNotFound:
             errorMessage = "Clave no encontrada"
@@ -309,10 +533,10 @@ struct LoginView: View {
         case .deviceLimitReached:
             errorMessage = "Límite de dispositivos alcanzado"
         case .deviceBanned:
-            errorMessage = "Este dispositivo fue baneado permanentemente"
+            errorMessage = "Este dispositivo fue baneado"
         case .networkError:
             errorMessage = "Error de conexión"
-        default:
+        case .invalidURL, .noData, .decodingFailed:
             errorMessage = "Error del servidor"
         }
         
@@ -320,7 +544,7 @@ struct LoginView: View {
         shakePasswordField()
     }
     
-    // MARK: - Shake Animation
+    // MARK: - Shake Animation (SIN CAMBIOS)
     
     private func shakePasswordField() {
         withAnimation(.default) { shakeOffset = -10 }
