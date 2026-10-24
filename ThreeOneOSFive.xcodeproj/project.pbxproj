@@ -283,7 +283,7 @@
 				3105M109 /* FrozenKeyView.swift */,
 				3105M112 /* AnnouncementBanner.swift */,
 				3105M113 /* AnnouncementPopup.swift */,
-				3105M214 /* KeychainStore.swift */,
+				3105M114 /* KeychainStore.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -496,7 +496,7 @@
 				3105M211,
 				3105M212,
 				3105M213,
-				3105M114,
+				3105M214 /* KeychainStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
