@@ -50,8 +50,8 @@ enum SupabaseError: Error {
 final class SupabaseService: ObservableObject {
     
     // ⚠️ CONFIGURACIÓN
-    static let supabaseURL = "https://pmrkczqfifmbmwcvlggr.supabase.co"
-    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtcmtjenFmaWZtYm13Y3ZsZ2dyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjgyNzksImV4cCI6MjEwNjgwNDI3OX0.JR-cFovbvdz-05V31erH0bj7zFf9ZGXeiwMPWtPOnTA"
+    static let supabaseURL = "https://uckcsnvmcomxethtfqum.supabase.co"
+    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVja2NzbnZtY29teGV0aHRmcXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3OTIwMDgsImV4cCI6MjEwODM2ODAwOH0._k0xyKIUDpwPtWky4JChDgHEWwLU5T6gGXcy2D7RnZc"
     
     // MARK: - Publicados
     
