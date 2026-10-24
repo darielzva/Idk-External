@@ -7,6 +7,7 @@ struct LoginView: View {
     @ObservedObject var session: AppSession
     @EnvironmentObject private var supabase: SupabaseService
     @State private var password = ""
+    @State private var showPassword = false
     @State private var showError = false
     @State private var errorMessage = "Clave incorrecta"
     @State private var shakeOffset: CGFloat = 0
@@ -14,6 +15,7 @@ struct LoginView: View {
     @State private var appeared = false
     @State private var rotationAngle: Double = 0
     @State private var isVerifying = false
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         ZStack {
@@ -190,7 +192,7 @@ struct LoginView: View {
         .siCard(radius: 12, tint: Color.white.opacity(0.03), tab: false)
     }
 
-    // MARK: - Password Field
+    // MARK: - Password Field (con ojo y pegar)
 
     private var passwordField: some View {
         HStack(spacing: 12) {
@@ -198,14 +200,21 @@ struct LoginView: View {
                 .foregroundColor(SITheme.accent.opacity(0.85))
                 .font(.system(size: 15))
 
-            SecureField("Introduce tu clave...", text: $password, prompt: Text("Introduce tu clave...").foregroundColor(SITheme.inkFaint))
-                .textFieldStyle(.plain)
-                .foregroundColor(SITheme.ink)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .submitLabel(.go)
-                .onSubmit(attemptLogin)
-                .disabled(isVerifying)
+            Group {
+                if showPassword {
+                    TextField("Introduce tu clave...", text: $password, prompt: Text("Introduce tu clave...").foregroundColor(SITheme.inkFaint))
+                } else {
+                    SecureField("Introduce tu clave...", text: $password, prompt: Text("Introduce tu clave...").foregroundColor(SITheme.inkFaint))
+                }
+            }
+            .textFieldStyle(.plain)
+            .foregroundColor(SITheme.ink)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .submitLabel(.go)
+            .focused($fieldFocused)
+            .onSubmit(attemptLogin)
+            .disabled(isVerifying)
 
             if !password.isEmpty && !isVerifying {
                 Button {
@@ -216,6 +225,25 @@ struct LoginView: View {
                         .font(.system(size: 14))
                 }
             }
+
+            // Pegar desde el portapapeles
+            Button(action: pasteFromClipboard) {
+                Image(systemName: "doc.on.clipboard")
+                    .foregroundColor(SITheme.accent.opacity(0.9))
+                    .font(.system(size: 15))
+            }
+            .disabled(isVerifying)
+
+            // Ver / ocultar lo que escribes
+            Button {
+                showPassword.toggle()
+            } label: {
+                Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                    .foregroundColor(SITheme.accent.opacity(0.9))
+                    .font(.system(size: 15))
+                    .frame(width: 22)
+            }
+            .disabled(isVerifying)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
@@ -228,6 +256,14 @@ struct LoginView: View {
             tab: false
         )
         .offset(x: shakeOffset)
+    }
+
+    private func pasteFromClipboard() {
+        guard let text = UIPasteboard.general.string?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else { return }
+        password = text
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     // MARK: - Login Button
@@ -322,30 +358,32 @@ struct LoginView: View {
         .animation(.easeOut(duration: 0.6).delay(0.5), value: appeared)
     }
 
-    // MARK: - Login Logic (SIN CAMBIOS)
-    
+    // MARK: - Login Logic
+
     private func attemptLogin() {
         guard !isVerifying else { return }
-        guard !password.isEmpty else { return }
-        
+        let key = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+
         isVerifying = true
         showError = false
-        
+        fieldFocused = false
+
         Task {
             do {
-                let key = try await supabase.verifyKey(password)
-                log("login: key verificada — \(key.label ?? "sin label")")
-                
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
-                
+                let result = try await supabase.verifyKey(key)
+                log("login: key verificada — \(result.label ?? "sin label")")
+
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+
                 await MainActor.run {
                     isVerifying = false
                     withAnimation(.easeInOut(duration: 0.3)) {
+                        KeychainStore.save(key)          // guarda la key para no pedirla de nuevo
                         session.isAuthenticated = true
                     }
                 }
-                
+
             } catch let error as SupabaseError {
                 await MainActor.run {
                     isVerifying = false
@@ -361,15 +399,12 @@ struct LoginView: View {
             }
         }
     }
-    
-    // MARK: - Handle Login Error (SIN CAMBIOS)
-    
+
+    // MARK: - Handle Login Error
+
     private func handleLoginError(_ error: SupabaseError) {
-        // Vibración de error
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.error)
-        
-        // Mensaje específico según el error
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+
         switch error {
         case .keyNotFound:
             errorMessage = "Clave no encontrada"
@@ -388,13 +423,13 @@ struct LoginView: View {
         case .invalidURL, .noData, .decodingFailed:
             errorMessage = "Error del servidor"
         }
-        
+
         showError = true
         shakePasswordField()
     }
-    
-    // MARK: - Shake Animation (SIN CAMBIOS)
-    
+
+    // MARK: - Shake Animation
+
     private func shakePasswordField() {
         withAnimation(.default) { shakeOffset = -10 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {

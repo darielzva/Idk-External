@@ -89,6 +89,7 @@
 		3105M211 /* AnnouncementsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M111; };
 		3105M212 /* AnnouncementBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
 		3105M213 /* AnnouncementPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M113; };
+		3105M214 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M114;
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -281,6 +282,7 @@
 				3105M109 /* FrozenKeyView.swift */,
 				3105M112 /* AnnouncementBanner.swift */,
 				3105M113 /* AnnouncementPopup.swift */,
+				3105M214 /* KeychainStore.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";

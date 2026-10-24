@@ -24,10 +24,29 @@ struct SupabaseKey: Codable, Identifiable {
     
     var isValid: Bool {
         guard isActive && !isBanned else { return false }
-        if let expiresAt, let date = ISO8601DateFormatter().date(from: expiresAt) {
+        if let expiresAt, let date = SupabaseDate.parse(expiresAt) {
             return date > Date()
         }
         return true
+    }
+}
+
+/// Postgres devuelve fechas con fracciones ("2026-11-23T02:57:06.209+00:00").
+/// ISO8601DateFormatter() por defecto NO las entiende y devolvía nil,
+/// por eso la expiración nunca se detectaba.
+enum SupabaseDate {
+    static func parse(_ string: String) -> Date? {
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = withFraction.date(from: string) { return date }
+        
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        if let date = plain.date(from: string) { return date }
+        
+        // Fallback: quitar la parte fraccionaria (ej. ".77975")
+        let stripped = string.replacingOccurrences(of: "\\.\\d+", with: "", options: .regularExpression)
+        return plain.date(from: stripped)
     }
 }
 
@@ -111,16 +130,17 @@ final class SupabaseService: ObservableObject {
             }
             
             // Validaciones básicas
-            if !key.isActive {
-                throw SupabaseError.keyInactive
-            }
+            // Orden: baneada > expirada > congelada (igual que en realtime)
             if key.isBanned {
                 throw SupabaseError.keyBanned
             }
             if let expiresAt = key.expiresAt,
-               let date = ISO8601DateFormatter().date(from: expiresAt),
+               let date = SupabaseDate.parse(expiresAt),
                date <= Date() {
                 throw SupabaseError.keyExpired
+            }
+            if !key.isActive {
+                throw SupabaseError.keyInactive
             }
             
             // Verificar límite de dispositivos
@@ -150,6 +170,43 @@ final class SupabaseService: ObservableObject {
         } catch {
             throw SupabaseError.networkError(error)
         }
+    }
+    
+    // MARK: - Chequeo liviano (para el polling cada 4 s)
+    
+    /// Solo lee la key. No registra dispositivo, no escribe logs y no abre WebSockets.
+    func checkKeyStatus(_ keyValue: String) async throws {
+        guard let encodedKey = keyValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "\(Self.supabaseURL)/rest/v1/keys?key_value=eq.\(encodedKey)&select=id,is_active,is_banned,expires_at") else {
+            throw SupabaseError.invalidURL
+        }
+        
+        let data: Data
+        do {
+            data = try await fetchData(url: url)
+        } catch let error as SupabaseError {
+            throw error
+        } catch {
+            throw SupabaseError.networkError(error)
+        }
+        
+        guard let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw SupabaseError.decodingFailed
+        }
+        guard let row = array.first else {
+            throw SupabaseError.keyNotFound
+        }
+        
+        let isActive = row["is_active"] as? Bool ?? true
+        let isBanned = row["is_banned"] as? Bool ?? false
+        
+        if isBanned { throw SupabaseError.keyBanned }
+        if let expiresAt = row["expires_at"] as? String,
+           let date = SupabaseDate.parse(expiresAt),
+           date <= Date() {
+            throw SupabaseError.keyExpired
+        }
+        if !isActive { throw SupabaseError.keyInactive }
     }
     
     // MARK: - Verificar límite de dispositivos
@@ -351,7 +408,7 @@ final class SupabaseService: ObservableObject {
                         
                         // ⏰ EXPIRADA → revocada
                         if let expiresAt,
-                           let date = ISO8601DateFormatter().date(from: expiresAt),
+                           let date = SupabaseDate.parse(expiresAt),
                            date <= Date() {
                             log("supabase: KEY EXPIRED — kicking user")
                             self.isKeyRevoked = true
